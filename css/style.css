@@ -121,6 +121,7 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: none
   padding: 18px; min-height: 220px;
 }
 .terminal .zeile { opacity: 0; animation: einblenden .45s forwards; }
+.terminal .zeile + .zeile { margin-top: 12px; }
 .terminal .zeile.de { color: var(--text); }
 @keyframes einblenden { to { opacity: 1; } }
 

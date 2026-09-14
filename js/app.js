@@ -503,8 +503,10 @@
   /* ---------- Story ---------- */
 
   function zeigeStory(s) {
-    const t = String(s.text || "");
-    const markiert = t.replace(/«([^»]*)»/g, (m, inner) => `<span class="fr">«${esc(inner)}»</span>`);
+    /* Erst vollstaendig maskieren, dann die franzoesischen Zitate einfaerben –
+       so bleibt auch der deutsche Teil zuverlaessig maskiert. */
+    const markiert = esc(String(s.text || ""))
+      .replace(/«([^»]*)»/g, '<span class="fr">«$1»</span>');
     zeichnen(`${missionsKopf()}
       <div class="label" style="margin-top:22px">// ${esc(s.titel)}</div>
       <div class="story"><p>${markiert}</p></div>

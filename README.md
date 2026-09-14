@@ -31,19 +31,38 @@ keine Herzen, die ausgehen**. Nichts, was Druck macht oder nach Abo riecht.
 
 ## Die Story
 
-Bureau 9 rekrutiert einen Vierzehnjährigen ausgerechnet deshalb, weil er kein
-Französisch kann – wer nichts versteht, fällt nicht auf. Über fünf Staffeln
-verfolgt er die Spur eines Jungen namens M, der zwei Jahre zuvor verschwand.
+Bureau 9 ist keine Behörde. Es ist ein privater Nachrichtendienst, der
+Minderjährige anwirbt – weil vierzehnjährige Jungen mit schlechten Noten
+niemandem auffallen und juristisch nicht existieren. Genau das erfährt der Held
+erst in Staffel 5: Seine Fünf in Französisch war kein Problem. Sie war die
+Qualifikation.
 
-M hat dasselbe Problem gehabt. Das ist der Punkt der ganzen Geschichte, und er
-wird in Modul 17 ausgesprochen:
+Über fünf Staffeln verfolgt er die Spur eines Jungen namens M, der zwei Jahre
+zuvor verschwand. M hatte dasselbe Problem – und das ist der Punkt der ganzen
+Geschichte. Er wird in Modul 17 ausgesprochen:
 
 > «Quand j'avais quatorze ans, j'étais nul en français. Ils me disaient que
 > c'était trop tard. Ce n'était pas vrai.»
 
-Nach Staffel 4 ist er raus – und wird ein Jahr später zurückgeholt, diesmal als
-der Erfahrenere. Am Ende von Staffel 5 stellt sich heraus: Es war nie eine
-Mission. Es war ein Französischkurs.
+Am Ende von Staffel 4 kommt er raus, aber er lässt M zurück. Ein Jahr später
+holt ihn die Sache wieder ein, und diesmal beendet er sie – nicht mit Gewalt,
+sondern indem er die Akte veröffentlicht. Der letzte Satz fällt in einem ganz
+normalen Französischunterricht.
+
+**Tonlage:** Thriller ab 16. Es gibt echte Konsequenzen – jemand verschwindet
+von einer Namensliste, ein Zeuge hat einen eine Woche alten Bluterguss, eine
+frühere Rekrutin kommt aus einer Klinik zurück und rekrutiert selbst. Nichts
+davon wird ausgemalt; die Härte liegt zwischen den Sätzen, nicht im Detail. Kein
+Blut, keine Waffen, niemand stirbt auf der Seite. Und das Ende ist eindeutig:
+Der Apparat fliegt auf, der Held steigt aus, die Kette reißt.
+
+Jede Mission endet mit einem Cliffhanger, der erst am nächsten Tag aufgelöst
+wird. Das ist der eigentliche Motor der App – nicht die Punkte.
+
+Zwei Stellen, an denen Grammatik und Handlung dasselbe sind: In Modul 16 ergeben
+die Anfangsbuchstaben von vier Nachrichten das Wort `TOIT`. Und in Modul 25
+verrät ein Absender sich über sechs falsch geschriebene Adverbien – die falschen
+Buchstaben untereinander ergeben `PAS MOI`.
 
 ## Der Stoff
 
