@@ -215,6 +215,10 @@
        die immer weiter waechst, sieht aus wie Schulden. Die hier wird nur groesser. */
     const sitzt = Object.values(s.srs).filter(k => k.r >= 3).length;
     const gesamt = Math.round(DP.gesamtFortschritt() * 100);
+    const offen = DP.missionHolen();
+    const sicherungAlter = DP.sicherungAlter();
+    const genugFortschritt = s.verlauf.length + (s.tag.aufgaben > 0 ? 1 : 0) >= 3;
+    const sicherungFaellig = genugFortschritt && (sicherungAlter === null || sicherungAlter >= 14);
     const fertigHeute = s.tag.missionFertig;
 
     const rangAnteil = naechst
@@ -258,8 +262,11 @@
         <div class="balken"><i style="width:${Math.round(DP.modulStaerke(modul.id) * 100)}%"></i></div>
       </div>
 
-      <button class="btn btn-haupt" id="start">
-        ${fertigHeute ? "Noch eine Mission" : "Mission starten"}
+      ${offen ? `<button class="btn btn-haupt" id="fortsetzen">Mission fortsetzen
+        <span class="unter">${esc(offen.titel)} &middot; noch ${offen.schritte.length - offen.index} Schritte, ${zeit(offen.restZeit)} übrig</span></button>` : ""}
+
+      <button class="btn ${offen ? "" : "btn-haupt"}" id="start">
+        ${offen ? "Neue Mission starten" : (fertigHeute ? "Noch eine Mission" : "Mission starten")}
         <span class="unter">${s.einstellungen.tagesziel || 15} Minuten &middot; ${esc(modul.titel)}</span>
       </button>
 
@@ -276,12 +283,28 @@
         <button class="btn btn-geist" id="bericht" style="flex:1">Bericht</button>
       </div>
 
+      ${sicherungFaellig ? `<div class="karte" style="border-color:rgba(255,194,75,.35)">
+        <div class="label gold">// SICHERUNG</div>
+        <p class="klein grau" style="margin:0 0 10px">${sicherungAlter === null
+          ? "Dein Fortschritt liegt nur in diesem Browser. Hol ihn dir einmal als Text heraus und schick ihn dir selbst – dann ist er auch nach einem neuen Handy noch da."
+          : "Deine letzte Sicherung ist " + sicherungAlter + " Tage her."}</p>
+        <button class="btn btn-geist" id="jetztSichern">Sicherung erstellen</button>
+      </div>` : ""}
+
       <div class="fuss">
         <button class="btn-geist" id="einst" style="width:auto;padding:8px 16px;display:inline-block">Einstellungen</button>
       </div>
     `);
 
-    auf("#start", "click", () => starteMission("mission"));
+    auf("#fortsetzen", "click", () => {
+      const g = DP.missionHolen();
+      if (g) missionFortsetzen(g); else starteMission("mission");
+    });
+    auf("#jetztSichern", "click", zeigeEinstellungen);
+    auf("#start", "click", () => {
+      if (offen && !confirm("Der angefangene Einsatz wird dann verworfen. Deine Antworten daraus bleiben gespeichert. Neue Mission starten?")) return;
+      starteMission("mission");
+    });
     auf("#kurz", "click", () => starteMission("kurz"));
     auf("#wdh", "click", () => starteMission("wiederholung"));
     auf("#pruefung", "click", () => starteMission("pruefung"));
@@ -293,8 +316,44 @@
 
   /* ---------- Mission ---------- */
 
+  /* Nach jedem Schritt den Zustand der laufenden Mission wegschreiben. Wer
+     mitten im Einsatz das Handy weglegt oder den Tab schliesst, soll beim
+     naechsten Oeffnen genau dort weitermachen – und nicht von vorn anfangen. */
+  function missionZustandSichern() {
+    if (!mission || ansicht !== "mission") return;
+    DP.missionSichern({
+      datum: DP.heute(),
+      modus: mission.modus,
+      modulId: mission.modul.id,
+      titel: mission.titel,
+      dauer: mission.dauer,
+      schritte: mission.schritte,
+      index: schrittIndex,
+      restZeit: restZeit,
+      zeitAus: zeitAus,
+      statistik: statistik
+    });
+  }
+
+  function missionFortsetzen(gesichert) {
+    DP.audio.freischalten();
+    const modul = (window.CURRICULUM || []).find(m => m.id === gesichert.modulId) || DP.aktuellesModul();
+    mission = {
+      modus: gesichert.modus, modul: modul, schritte: gesichert.schritte,
+      titel: gesichert.titel, dauer: gesichert.dauer
+    };
+    schrittIndex = Math.min(gesichert.index || 0, mission.schritte.length - 1);
+    restZeit = typeof gesichert.restZeit === "number" ? gesichert.restZeit : mission.dauer;
+    zeitAus = !!gesichert.zeitAus;
+    statistik = gesichert.statistik || { gesamt: 0, richtig: 0, fast: 0, falsch: 0, boss: 0, bossGesamt: 0, start: Date.now(), themen: {} };
+    ansicht = "mission";
+    uhrStarten();
+    zeigeSchritt();
+  }
+
   function starteMission(modus, zielModulId) {
     DP.audio.freischalten();
+    DP.missionVerwerfen();
     mission = DP.missionBauen(modus, zielModulId);
     if (!mission.schritte.length) {
       alert("Gerade ist nichts fällig. Starte eine normale Mission.");
@@ -347,9 +406,10 @@
 
   function nachKopf() {
     auf("#raus", "click", () => {
-      if (statistik.gesamt === 0 || confirm("Mission abbrechen? Der Fortschritt bis hierher bleibt gespeichert.")) {
+      if (statistik.gesamt === 0 || confirm("Mission abbrechen? Jede Antwort, die du schon gegeben hast, bleibt gespeichert.")) {
         uhrStoppen();
         DP.audio.stopp();
+        DP.missionVerwerfen();
         DP.speichern();
         zeigeBasis();
       }
@@ -384,6 +444,7 @@
     if (schrittIndex >= mission.schritte.length) return zeigeAbschluss();
     const s = mission.schritte[schrittIndex];
     beantwortet = false;
+    missionZustandSichern();
 
     if (s.art === "karte") return zeigeKarte(s);
     if (s.art === "regel") return zeigeRegel(s);
@@ -481,6 +542,7 @@
           gewaehlt = null; geloest++;
           if (geloest >= paare.length) {
             DP.stand.xp += 15;
+            DP.speichern();
             DP.audio.kombo();
             setTimeout(weiter, 450);
           }
@@ -634,6 +696,7 @@
     if (ergebnis !== "falsch") DP.stand.tag.richtig++;
     const p = DP.punkte(ergebnis);
     DP.speichern();
+    missionZustandSichern();
 
     /* Nach der Abgabe gibt es nichts mehr zu pruefen – sonst stehen zwei grosse
        Knoepfe untereinander und man weiss nicht, welcher gemeint ist. */
@@ -711,7 +774,10 @@
   function zeigeAbschluss() {
     uhrStoppen();
     ansicht = "abschluss";
-    const dauer = Math.round((Date.now() - statistik.start) / 1000);
+    DP.missionVerwerfen();
+    /* Dauer aus der Uhr, nicht aus der Wanduhr: unterbrochene Einsätze sollen
+       nicht die Pause mitzählen. */
+    const dauer = Math.max(0, (mission.dauer || 0) - restZeit);
     const quote = statistik.gesamt ? Math.round(((statistik.richtig + statistik.fast) / statistik.gesamt) * 100) : 0;
     const neueOrden = DP.missionAbschliessen(mission, statistik);
 
@@ -1015,10 +1081,15 @@
 
       <div class="karte">
         <div class="label grau">// SICHERUNG</div>
-        <p class="klein grau" style="margin:0 0 12px">Dein Fortschritt liegt nur in diesem
+        <p class="klein grau" style="margin:0 0 6px">Dein Fortschritt liegt nur in diesem
         Browser auf diesem Gerät – kein Server, kein Account. Das heißt auch: neues Handy
         oder gelöschte Browserdaten, und er ist weg. Hol ihn dir ab und zu als Text heraus
         und sichere ihn irgendwo, wo du ihn wiederfindest.</p>
+        <p class="klein" style="margin:0 0 12px;color:${DP.sicherungAlter() === null || DP.sicherungAlter() >= 14 ? "var(--gold)" : "var(--grau)"}">
+          ${DP.sicherungAlter() === null ? "Noch nie gesichert."
+            : DP.sicherungAlter() === 0 ? "Zuletzt gesichert: heute."
+            : "Zuletzt gesichert vor " + DP.sicherungAlter() + " Tagen."}
+        </p>
         <div class="btn-reihe">
           <button class="btn btn-geist" id="sicherungRaus" style="flex:1">Sicherung erstellen</button>
           <button class="btn btn-geist" id="sicherungRein" style="flex:1">Einspielen</button>
@@ -1110,12 +1181,48 @@
 
   /* ---------- Start ---------- */
 
+  /* Sichtbare Warnung, wenn nicht gespeichert werden kann. Ein stiller Fehler
+     in der Konsole hilft einem Vierzehnjährigen nicht. */
+  function speicherWarnung(zustand) {
+    let el = document.getElementById("speicherwarnung");
+    if (zustand.ok) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "speicherwarnung";
+      el.className = "warnbalken";
+      document.body.insertBefore(el, document.body.firstChild);
+    }
+    el.innerHTML = "&#9888; Dein Fortschritt kann gerade nicht gespeichert werden. " +
+      esc(zustand.grund || "") +
+      " Läuft der Browser im privaten Modus? Mach vorsichtshalber eine Sicherung in den Einstellungen.";
+  }
+  DP.aufSpeicherfehler = speicherWarnung;
+
   DP.laden();
+  if (!DP.speicherLaeuft.ok) speicherWarnung(DP.speicherLaeuft);
+
   document.addEventListener("click", () => DP.audio.freischalten(), { once: true });
-  window.addEventListener("beforeunload", () => DP.speichern());
+
+  function allesSichern() {
+    missionZustandSichern();
+    DP.speichern();
+  }
+
+  /* beforeunload allein reicht nicht – auf iOS feuert es oft nicht. pagehide und
+     visibilitychange sind dort die zuverlässigen Ereignisse. */
+  window.addEventListener("beforeunload", allesSichern);
+  window.addEventListener("pagehide", allesSichern);
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) { uhrStoppen(); DP.speichern(); }
+    if (document.hidden) { uhrStoppen(); allesSichern(); }
     else if (ansicht === "mission" && !uhrTimer) uhrStarten();
+  });
+
+  /* Zwei offene Tabs sollen sich nicht gegenseitig löschen: schreibt einer,
+     übernimmt der andere den neueren Stand, statt ihn später zu überbügeln. */
+  window.addEventListener("storage", ev => {
+    if (ev.key && ev.key !== DP.SCHLUESSEL) return;
+    if (!DP.fremdstandUebernehmen()) return;
+    if (ansicht === "basis") zeigeBasis();
   });
 
   if (!DP.stand.prolog) zeigeProlog();

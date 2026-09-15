@@ -312,3 +312,9 @@ button { font-family: inherit; font-size: inherit; cursor: pointer; border: none
 
 .eingabe[disabled] { opacity: .65; }
 .akzenttaste[disabled] { opacity: .35; }
+
+.warnbalken {
+  position: sticky; top: 0; z-index: 60;
+  background: var(--rot); color: #fff;
+  padding: 10px 16px; font-size: 13px; line-height: 1.45;
+}

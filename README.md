@@ -23,6 +23,7 @@ Aufhören teuer:
 | **Sofortige Rückmeldung** | Richtig, fast, falsch – innerhalb einer Sekunde, mit Ton und Punkten. |
 | **Nie bloßgestellt** | Akzent- und Tippfehler zählen als „Fast" und geben Punkte. Die richtige Schreibweise steht daneben. Kein Rotstift. |
 | **Serie ohne Drohung** | Wer einen Tag verpasst, verliert nichts: zwei „Alibis" pro Monat retten die Serie automatisch. |
+| **Nie umsonst gespielt** | Jede Antwort wird sofort gespeichert, ein abgebrochener Einsatz lässt sich fortsetzen. Verlorener Fortschritt ist der sicherste Weg, dass er nie wieder aufmacht. |
 | **Vergessen eingeplant** | Ein Wiederholungsalgorithmus holt jeden Inhalt genau dann zurück, wenn er zu kippen droht. |
 | **Sichtbarer Rückstand-Abbau** | Die „Akte" zeigt 32 Module mit Fortschrittsbalken. Man sieht den Berg schrumpfen. |
 
@@ -55,6 +56,19 @@ frühere Rekrutin kommt aus einer Klinik zurück und rekrutiert selbst. Nichts
 davon wird ausgemalt; die Härte liegt zwischen den Sätzen, nicht im Detail. Kein
 Blut, keine Waffen, niemand stirbt auf der Seite. Und das Ende ist eindeutig:
 Der Apparat fliegt auf, der Held steigt aus, die Kette reißt.
+
+**Feste Regel: Die Geschichte fasst das echte Leben nicht an.** Alles spielt in
+einer erfundenen Welt – der Held bekommt in Modul 8 eine Tarnidentität (Léo
+Marchand, Lycée Voltaire, Rue Lepic 12), und jede Schule, jede Wohnung, jede
+Lehrkraft und jede andere Person in der Geschichte gehört dort hin. Nichts
+verweist auf die Schule, das Zuhause, die Familie oder Mitschüler des Spielers,
+und nichts fordert ihn zu einer Handlung gegenüber einer echten Person auf.
+
+Der einzige Punkt, an dem die Geschichte etwas verlangt, ist Modul 14: Er soll
+den nächsten Rekruten benennen – Théo Berger, dreizehn, eine erfundene Person,
+die er nie trifft. Er sagt nein. Und in Modul 32 ist genau das der Ausgang: Er
+liefert niemanden aus, er veröffentlicht die Akte und verhindert damit, dass
+Théo in elf Tagen angesprochen wird.
 
 Jede Mission endet mit einem Cliffhanger, der erst am nächsten Tag aufgelöst
 wird. Das ist der eigentliche Motor der App – nicht die Punkte.
@@ -170,20 +184,34 @@ Im `localStorage` des Browsers, in dem gespielt wird – Schlüssel
 werden Deckname, Punkte, Serie, der Lernstand jeder einzelnen Karte, die
 abgeschlossenen Module und der Stand der Geschichte.
 
-Das hat einen Preis, den man kennen sollte:
+Weil verlorener Fortschritt der sicherste Weg ist, dass ein Vierzehnjähriger die
+App nie wieder öffnet, steckt hier mehr Aufwand als in irgendeinem anderen Teil:
+
+| Situation | Was passiert |
+|---|---|
+| Nach jeder Antwort | Sofort geschrieben, nicht erst am Missionsende |
+| Tab oder App geschlossen | `beforeunload`, `pagehide` und `visibilitychange` sichern jeweils – auf iOS feuert das erste oft nicht, die anderen schon |
+| Mitten in der Mission weggelegt | Der ganze Einsatz wird mitgeschrieben; beim nächsten Öffnen steht oben **Mission fortsetzen**, mit Reststrecke und Restzeit |
+| Zwei Tabs offen | Jeder Schreibvorgang hat eine laufende Nummer. Der ältere Tab überschreibt nichts, sondern führt beide Stände zusammen – pro Karte gewinnt die, die öfter geübt wurde |
+| Hauptstand beschädigt | Alle zwölf Schreibvorgänge wird eine zweite Kopie angelegt, aus der beim Start wiederhergestellt wird |
+| Speicher voll | Erst wird die Kopie geopfert und erneut versucht |
+| Speicher gesperrt (privater Modus) | Die App läuft weiter, aber ein roter Balken sagt deutlich, dass gerade nichts gespeichert wird |
+| Zwei Wochen ohne Sicherung | Der Startbildschirm erinnert daran, den Stand als Text herauszuholen |
+
+Was das alles trotzdem nicht auffängt:
 
 - Der Stand gilt **pro Gerät und pro Browser**. Am Handy weiterspielen, was am
-  Laptop angefangen wurde, geht nicht automatisch.
-- „Browserdaten löschen", ein neues Handy oder der private Modus – und alles ist
-  weg.
+  Laptop lief, geht nur über die Sicherung.
+- „Browserdaten löschen" oder ein neues Handy räumt alles ab.
+- Safari auf iOS löscht Speicher von Webseiten, die sieben Tage nicht benutzt
+  wurden. Auf dem Startbildschirm installiert (Einstellungen → Aufs Handy legen)
+  gilt das nicht – deshalb der Hinweis dort.
 
-Deshalb gibt es unter *Einstellungen → Sicherung* einen Knopf, der den ganzen
-Stand als Text herausgibt. Den kann man sich selbst per Mail schicken oder in
-eine Notiz legen und auf einem anderen Gerät wieder einspielen. Das ist auch der
-Weg, um vom Browser auf die installierte App umzuziehen.
-
-Einmal im Monat sichern reicht. Direkt nach der ersten Einstufung lohnt es sich
-besonders.
+Für all das gibt es unter *Einstellungen → Sicherung* einen Knopf, der den
+kompletten Stand als Text ausgibt. Den kann man sich selbst per Mail schicken
+und auf einem anderen Gerät wieder einspielen; der eingespielte Stand gewinnt
+dann gegen alles, was auf dem Gerät schon lag. Einmal im Monat reicht, direkt
+nach der ersten Einstufung lohnt es sich besonders.
 
 ## Inhalte ändern
 
@@ -213,3 +241,11 @@ die drei größten Baustellen. Am besten, wenn er ihn selbst zeigt.
 Die Notenschätzung in der Prüfungssimulation ist eine grobe Orientierung aus
 den eigenen Antworten – keine Note und kein Ersatz für die Einschätzung der
 Lehrerin.
+
+Das Einzige, worum du dich technisch kümmern solltest: Wenn die App irgendwann
+zur Sicherung auffordert, einmal auf den Knopf tippen und den Text irgendwo
+hinlegen, wo ihr ihn wiederfindet. Alles andere passiert von selbst.
+
+Und die Geschichte spielt bewusst vollständig in einer erfundenen Welt – keine
+Figur, kein Ort und keine Aufgabe darin hat mit seiner Schule, seinem Zuhause
+oder seinen Mitschülern zu tun.

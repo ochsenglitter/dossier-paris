@@ -11,7 +11,7 @@ window.STORY_PROLOG = {
   titel: "EINGEHENDE NACHRICHT",
   text: [
     "03:14 Uhr. Dein Handy leuchtet auf. Keine Nummer, kein Name, keine Vorwarnung.",
-    "«Bureau 9. Wir haben deine Akte gelesen. Zwei Jahre Französisch, eine Fünf im Zeugnis, und du verstehst kein einziges Wort. Genau deshalb schreiben wir dir.»",
+    "«Bureau 9. Wir haben die Akte gelesen, die es über dich gibt. Zwei Jahre Französisch, und kein einziges Wort davon ist hängen geblieben. Genau deshalb schreiben wir dir.»",
     "«Wer nichts versteht, wird nicht verdächtigt. Wer vierzehn ist, wird nicht durchsucht. Du bist perfekt.»",
     "«Vor dir hatten wir jemanden. Er war gut. Er hat vier Monate durchgehalten. Dann war er weg.»",
     "«Du hast bis Februar. Fünfzehn Minuten am Tag. Mehr geben wir dir nicht, mehr brauchst du nicht.»",
@@ -27,7 +27,7 @@ window.STORY = {
     beats: [
       "Ein Mann im grauen Mantel setzt sich neben dich. Er sieht dich nicht an. «Bonjour.» Mehr sagt er nicht. Zwölf Sekunden vergehen.",
       "Du antwortest. Seine Schultern gehen einen Millimeter runter. «Ça va ?» Die zweite Frage ist die eigentliche Prüfung.",
-      "Er schiebt dir einen Umschlag über die Bank. Darauf steht eine einzige Zahl: 14. Sie kennen dein Alter, dein Zeugnis und deine Adresse.",
+      "Er schiebt dir einen Umschlag über die Bank. Darauf steht eine einzige Zahl: 14. Sie wissen mehr über dich, als in irgendeiner Akte stehen dürfte.",
       "«Comment tu t'appelles ?» Du sagst deinen richtigen Namen. Er schüttelt kaum merklich den Kopf. «Non. Jamais celui-là.» Nie den."
     ],
     ende: "Er steht auf und ist im Gedränge verschwunden, bevor du aufgesehen hast. Im Umschlag: ein Schlüssel, eine Adresse und ein zweites Handy. Auf dem Display eine Zeile: «Quand il sonne, tu réponds.» Wenn es klingelt, gehst du ran."
@@ -96,14 +96,14 @@ window.STORY = {
       "Dritter Punkt: la bibliothèque, Regal 447. In einem Buch steckt ein zweiter Stadtplan mit ganz anderen Punkten.",
       "Du hältst beide Pläne übereinander gegen die Fensterscheibe. Die Linien kreuzen sich an genau einer Stelle: la gare."
     ],
-    ende: "Gleis 9, Schließfach 47. Der Schlüssel passt sofort. Darin liegt ein Trainingsplan, eine Bahnkarte – und ein Foto vom Haupteingang deiner Schule, aufgenommen letzten Dienstag um 7:52."
+    ende: "Gleis 9, Schließfach 47. Der Schlüssel passt sofort. Darin liegt ein Trainingsplan, eine Bahnkarte – und ein Foto vom Haupteingang des Lycée Voltaire, aufgenommen letzten Dienstag um 7:52. Du warst noch nie dort."
   },
 
   m08: {
-    intro: "Der Trainingsplan ist keine Liste. Er ist eine Person. Nicht du. Die sollst du ab jetzt sein.",
+    intro: "Der Trainingsplan ist keine Liste. Er ist eine Person: Léo Marchand, vierzehn, Lycée Voltaire, wohnhaft Rue Lepic 12. Es gibt ihn nicht. Ab jetzt bist du er.",
     beats: [
       "«Tu fais du foot. Tu joues de la guitare. Tu détestes les maths.» Zwei davon stimmen sogar. Das dritte musst du lernen wie eine Vokabel.",
-      "In der Schule fragt dich jemand, wo du am Wochenende warst. Du hörst dich selbst lügen und merkst, wie leicht es geht.",
+      "Am Nachmittag sollst du die Legende auf der Straße testen. Ein Fremder fragt dich nach dem Weg zur Rue Lepic. Du antwortest wie jemand, der dort wohnt, und er geht weiter, ohne nachzufragen.",
       "Abends ruft eine Frau an und fragt dich auf Französisch nach deinen Hobbys. Du antwortest. Sie legt auf, ohne sich zu verabschieden.",
       "Zehn Minuten später: «Trop lent. Encore.» Zu langsam. Nochmal. Dreimal in dieser Nacht, immer um dieselbe Frage herum."
     ],
@@ -151,7 +151,7 @@ window.STORY = {
       "Antwort nach vier Minuten: «Tu as oublié quelque chose ?» Hast du etwas vergessen? Sie fragen nicht, wenn sie es nicht wissen.",
       "Du schreibst: «Non.» Zum ersten Mal lügst du Bureau 9 an. Auf Französisch, fehlerfrei, ohne zu zögern."
     ],
-    ende: "Zwölf Stunden Funkstille. Dann eine einzige Zeile: «Bien. Tu apprends vite.» Gut, du lernst schnell. Darunter ein Foto: du, gestern Abend, vor eurer Haustür."
+    ende: "Zwölf Stunden Funkstille. Dann eine einzige Zeile: «Bien. Tu apprends vite.» Gut, du lernst schnell. Darunter ein Foto: die Wohnungstür in der Rue de Lille, gestern Abend, 22:40. Aufgenommen von innen."
   },
 
   m13: {
@@ -169,7 +169,7 @@ window.STORY = {
     intro: "M schreibt dir zum ersten Mal direkt. Und er schreibt nicht über gestern, sondern über morgen.",
     beats: [
       "«Ils vont te demander de choisir.» Sie werden dich bitten auszuwählen. Du liest es zweimal und verstehst es beim zweiten Mal.",
-      "Keine Aufgabe. Eine Person. Den Nächsten. Jemanden aus deiner Schule, der jung genug ist und niemandem auffällt.",
+      "Keine Aufgabe. Eine Person. Den Nächsten. Auf der Liste steht ein einziger Name: Théo Berger, dreizehn, Lycée Voltaire. Jemand, den du nie getroffen hast und nie treffen wirst.",
       "«Tu vas dire oui. Tout le monde dit oui.» Du wirst ja sagen. Alle sagen ja. Er schreibt es ohne Vorwurf, wie eine Wetterprognose.",
       "Du tippst: «Je ne vais pas dire oui.» Es dauert vier Minuten, bis er antwortet: «Alors on va se voir.» Dann sehen wir uns."
     ],
@@ -195,7 +195,7 @@ window.STORY = {
       "Teil drei: «Il y en a une autre.» Es gibt noch eine. Eine andere – was?",
       "Teil vier: «Trouve-la avant eux.» Finde sie vor ihnen. Du legst alle vier untereinander und siehst die Anfangsbuchstaben."
     ],
-    ende: "T – O – I – T. Toit. Dach. In dieser ganzen Geschichte wurde genau ein Dach erwähnt. Im selben Moment kommt eine Nachricht von Bureau 9. Keine Worte, nur eine Adresse. Es ist eure."
+    ende: "T – O – I – T. Toit. Dach. In dieser ganzen Geschichte wurde genau ein Dach erwähnt. Im selben Moment kommt eine Nachricht von Bureau 9. Keine Worte, nur eine Adresse. Es ist die, unter der M's Familie heute wohnt."
   },
 
   m17: {
@@ -228,7 +228,7 @@ window.STORY = {
       "«C'est l'endroit où tout a commencé.» Foto drei: Rue de Lille 47. Die erste Wohnung. Die mit der warmen Tasse.",
       "Die Wohnung war nie leer. Sie war seine. Du bist an dem Tag eingezogen, an dem er raus musste."
     ],
-    ende: "Du warst nie der Erste. Du bist der Ersatz. Und irgendwo in deiner Schule läuft gerade jemand herum, der dein Ersatz werden soll."
+    ende: "Du warst nie der Erste. Du bist der Ersatz. Und irgendwo in Paris läuft gerade ein Dreizehnjähriger herum, der deiner werden soll."
   },
 
   m20: {
@@ -283,11 +283,11 @@ window.STORY = {
       "Vidal nimmt die Kopie entgegen und blättert sie nicht durch. Er weiß, dass es eine Kopie ist. Er lässt dich trotzdem gehen – ein Junge, der schweigt, ist nützlicher als einer, der verschwindet.",
       "«Tu pourrais rester», sagt er im Weggehen. Du könntest bleiben. – «Je voudrais rentrer.» Ich möchte nach Hause."
     ],
-    ende: "«Si tu rentres, ils te laisseront tranquille.» Wenn du heimgehst, lassen sie dich in Ruhe. Du gehst. M bleibt stehen, wo er steht, und du drehst dich nicht um. An der Haustür kommt die letzte Nachricht: «Tu n'as plus besoin de nous.» SAISON 4 ABGESCHLOSSEN. — Ein Jahr später vibriert in deiner Schublade ein Handy, das du längst weggelegt hattest."
+    ende: "«Si tu rentres, ils te laisseront tranquille.» Wenn du heimgehst, lassen sie dich in Ruhe. Du gehst. M bleibt stehen, wo er steht, und du drehst dich nicht um. Auf dem Rückweg kommt die letzte Nachricht: «Tu n'as plus besoin de nous.» SAISON 4 ABGESCHLOSSEN. — Ein Jahr später vibriert in deiner Schublade ein Handy, das du längst weggelegt hattest."
   },
 
   m25: {
-    intro: "Ein Jahr. Neue Klasse, neue Lehrerin, das alte Handy ganz unten unter den Socken. Und dann vibriert es doch.",
+    intro: "Ein Jahr ist vergangen. Neues Schuljahr, altes Leben, und das zweite Handy liegt ganz unten unter den Socken. Dann vibriert es doch.",
     beats: [
       "«Réponds vite. S'il te plaît.» Antworte schnell. Bitte. M hat in vier Monaten nie bitte geschrieben.",
       "Du tippst zurück, ohne den Umweg über den Kopf. Die Wörter sind einfach da. Zwei Jahre Arbeit, und du merkst es erst jetzt.",
@@ -305,7 +305,7 @@ window.STORY = {
       "Du fragst: «Je la donne à qui, alors ?» – «À personne. Garde-la.» An niemanden. Behalt sie.",
       "Die Datei heißt 2247. Dieselbe Nummer wie vor einem Jahr. Nur ist sie jetzt doppelt so lang."
     ],
-    ende: "Auf Seite 51 steht ein Name mit Geburtsdatum. Dreizehn Jahre alt. Und die Schule, die daneben steht, ist deine."
+    ende: "Auf Seite 51 steht wieder dieser Name. Théo Berger. Derselbe wie vor einem Jahr – nur steht diesmal ein Datum daneben, und das liegt in elf Tagen."
   },
 
   m27: {
@@ -324,10 +324,10 @@ window.STORY = {
     beats: [
       "«Ils t'avaient choisi avant de t'écrire.» Sie hatten dich ausgewählt, bevor sie dir schrieben.",
       "«Quand tu es arrivé, tout avait déjà été décidé.» Als du ankamst, war längst alles entschieden.",
-      "Daneben steht, wer den ersten Bericht über dich verfasst hat. Jemand aus deiner Schule. Du erkennst den Namen sofort und liest ihn dreimal.",
+      "Daneben steht, wer die Empfehlung geschrieben hat: Rieu, Vertrauenslehrer am Lycée Voltaire. Der Mann, dessen Aufgabe es ist, die aufzufangen, die nicht mehr mitkommen.",
       "«J'avais essayé de te prévenir.» Ich hatte versucht, dich zu warnen. Die Brücke. Der Junge am Geländer. Das war der Versuch."
     ],
-    ende: "«Ils ne t'ont pas trouvé. Ils t'avaient cherché.» Sie haben dich nicht gefunden. Sie hatten dich gesucht. Deine Fünf in Französisch war kein Problem. Sie war die Qualifikation."
+    ende: "«Ils ne t'ont pas trouvé. Ils t'avaient cherché.» Sie haben dich nicht gefunden. Sie hatten dich gesucht. Bureau 9 sucht immer die, von denen längst alle glauben, sie kämen sowieso nicht mehr mit. Es ist ihr einziges Auswahlkriterium – und es ist ihr größter Fehler."
   },
 
   m29: {
@@ -368,10 +368,10 @@ window.STORY = {
     beats: [
       "Sie erklärt es ruhig, fast freundlich: Wer das übersteht, hat zwei Möglichkeiten. Kaputtgehen oder weitermachen. «On m'a donné le choix.» Man hat mir die Wahl gelassen.",
       "Sie legt zwei Umschläge auf den Tisch. Im einen dein Ausstieg. Im anderen ihr Job. «Il paraît que tu es doué.» Es heißt, du seist begabt.",
-      "Du nimmst keinen von beiden. Du hast die Akte heute früh um 6:20 an eine Journalistin geschickt. Vierfach, mit Zeitstempel, von einem Rechner in der Stadtbibliothek.",
+      "Du nimmst keinen von beiden. Du hast die Akte heute früh um 6:20 an eine Journalistin geschickt – vierfach, mit Zeitstempel, von einem Rechner in der Stadtbibliothek. Auf Seite 51 steht Théo Bergers Name. In elf Tagen hätte ihn jemand angesprochen. Jetzt nicht mehr.",
       "«Le dossier a été publié ce matin.» Die Akte wurde heute Morgen veröffentlicht. Im Passiv kommt niemand vor. Genau dafür gibt es das Passiv."
     ],
-    ende: "Drei Tage später steht es in der Zeitung, ohne deinen Namen. «On m'a dit que tu étais nul en français», sagt Camille am Telefon, bevor sie auflegt und verschwindet. «On s'est trompé.» — Vier Wochen danach stellt deine neue Französischlehrerin im Unterricht eine Frage, die außer dir niemand versteht. Du antwortest. Sie sieht dich an, als hätte sie dich noch nie gesehen. In M's letztem Umschlag, den du nie geöffnet hattest, steht ein einziger Satz: «Ce n'était jamais une mission. C'était un cours de français. Et tu l'as terminé.» AKTE GESCHLOSSEN."
+    ende: "Drei Tage später steht es in der Zeitung, ohne deinen Namen. «On m'a dit que tu étais nul en français», sagt Camille am Telefon, bevor sie auflegt und verschwindet. «On s'est trompé.» — Wochen später sitzt du irgendwo im Französischunterricht und merkst mitten in einem Satz, dass du ihn schon verstanden hattest, bevor er zu Ende war. Niemand um dich herum bemerkt etwas. Es ist völlig unspektakulär, und es ist das Beste an der ganzen Sache. In M's letztem Umschlag, den du nie geöffnet hattest, steht ein einziger Satz: «Ce n'était jamais une mission. C'était un cours de français. Et tu l'as terminé.» AKTE GESCHLOSSEN."
   }
 };
 
@@ -386,6 +386,6 @@ window.FUNK = [
   "«Le silence est une réponse aussi.» Schweigen ist auch eine Antwort.",
   "«Ils comptent sur ton silence. Pas sur ton français.» Sie rechnen mit deinem Schweigen. Nicht mit deinem Französisch.",
   "«Ce que tu apprends, personne ne peut te le prendre.» Was du lernst, kann dir niemand mehr nehmen.",
-  "«Ne fais confiance à personne. Sauf à ta mémoire.» Vertrau niemandem. Außer deinem Gedächtnis.",
+  "«Fais confiance à ta mémoire. Elle est meilleure que tu crois.» Vertrau deinem Gedächtnis. Es ist besser, als du denkst.",
   "«On t'attend demain.» Wir erwarten dich morgen."
 ];

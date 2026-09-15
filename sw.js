@@ -1,5 +1,5 @@
 /* DOSSIER PARIS – Offline-Cache. Version bei jeder Aenderung hochzaehlen. */
-const CACHE = "dossier-paris-v2";
+const CACHE = "dossier-paris-v3";
 const DATEIEN = [
   "./", "./index.html", "./manifest.webmanifest", "./img/icon.svg",
   "./css/style.css",

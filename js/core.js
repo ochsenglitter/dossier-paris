@@ -86,14 +86,33 @@ DP.pruefe = function (eingabe, loesung) {
   if (DP.abstand(DP.ohneAkzente(e), DP.ohneAkzente(l)) <= 1) return "fast";
   return "falsch";
 };
+/* ---------- Speicherstand ----------
+   Wichtigste Eigenschaft dieser App: Es darf niemals Fortschritt verloren gehen.
+   Wer zwei Wochen lang jeden Tag fuenfzehn Minuten investiert und dann bei null
+   steht, macht nie wieder auf. Deshalb hier mehr Aufwand als ueblich:
 
-/* ---------- Speicherstand ---------- */
+   - nach jeder einzelnen Antwort wird geschrieben, nicht erst am Ende
+   - jeder Schreibvorgang bekommt eine laufende Nummer, damit ein zweiter
+     offener Tab einen neueren Stand nicht ueberschreibt
+   - zwei Staende werden zusammengefuehrt statt gegeneinander zu arbeiten
+   - es gibt eine zweite Kopie, falls der Hauptstand beschaedigt ist
+   - schlaegt das Schreiben fehl, erfaehrt man das sofort und sichtbar */
 
 const SCHLUESSEL = "dossier-paris-v1";
+const KOPIE_SCHLUESSEL = "dossier-paris-v1-kopie";
+const REVISION_SCHLUESSEL = "dossier-paris-v1-rev";
+const MISSION_SCHLUESSEL = "dossier-paris-v1-mission";
+
+DP.SCHLUESSEL = SCHLUESSEL;
+DP.aufSpeicherfehler = null;
+DP.speicherLaeuft = { ok: true, grund: null, geprueft: false };
 
 DP.leererStand = function () {
   return {
     v: 1,
+    revision: 0,
+    gespeichertAm: 0,
+    letzteSicherung: 0,
     codename: "",
     xp: 0,
     kombo: 0,
@@ -111,30 +130,214 @@ DP.leererStand = function () {
 
 DP.stand = DP.leererStand();
 
-DP.laden = function () {
+/* Kann dieser Browser ueberhaupt dauerhaft speichern? Im privaten Modus mancher
+   Browser schlaegt das fehl – dann muss der Hinweis kommen, bevor er loslegt. */
+DP.speicherPruefen = function () {
   try {
-    const roh = localStorage.getItem(SCHLUESSEL);
-    if (roh) {
-      const s = JSON.parse(roh);
-      DP.stand = Object.assign(DP.leererStand(), s);
-      DP.stand.serie = Object.assign(DP.leererStand().serie, s.serie || {});
-      DP.stand.tag = Object.assign(DP.leererStand().tag, s.tag || {});
-      DP.stand.fortschritt = Object.assign(DP.leererStand().fortschritt, s.fortschritt || {});
-      DP.stand.einstellungen = Object.assign(DP.leererStand().einstellungen, s.einstellungen || {});
-    }
+    const probe = "dossier-paris-probe";
+    localStorage.setItem(probe, "1");
+    const gelesen = localStorage.getItem(probe);
+    localStorage.removeItem(probe);
+    DP.speicherLaeuft = { ok: gelesen === "1", grund: gelesen === "1" ? null : "Speicher nicht lesbar", geprueft: true };
   } catch (e) {
-    console.warn("Speicherstand nicht lesbar, starte neu.", e);
+    DP.speicherLaeuft = { ok: false, grund: "kein Zugriff auf den Speicher", geprueft: true };
   }
+  return DP.speicherLaeuft.ok;
+};
+
+function standAufbauen(roh) {
+  const s = Object.assign(DP.leererStand(), roh);
+  s.serie = Object.assign(DP.leererStand().serie, roh.serie || {});
+  s.tag = Object.assign(DP.leererStand().tag, roh.tag || {});
+  s.fortschritt = Object.assign(DP.leererStand().fortschritt, roh.fortschritt || {});
+  s.einstellungen = Object.assign(DP.leererStand().einstellungen, roh.einstellungen || {});
+  if (!s.srs || typeof s.srs !== "object") s.srs = {};
+  if (!Array.isArray(s.orden)) s.orden = [];
+  if (!Array.isArray(s.verlauf)) s.verlauf = [];
+  if (!Array.isArray(s.fortschritt.fertig)) s.fortschritt.fertig = [];
+  if (!s.fortschritt.beat || typeof s.fortschritt.beat !== "object") s.fortschritt.beat = {};
+  if (!s.fortschritt.briefing || typeof s.fortschritt.briefing !== "object") s.fortschritt.briefing = {};
+  return s;
+}
+DP.standAufbauen = standAufbauen;
+
+function lesen(schluessel) {
+  const roh = localStorage.getItem(schluessel);
+  if (!roh) return null;
+  const daten = JSON.parse(roh);
+  if (!daten || typeof daten !== "object" || !daten.srs) throw new Error("unbrauchbar");
+  return daten;
+}
+
+DP.laden = function () {
+  DP.speicherPruefen();
+  let geladen = null;
+  try {
+    geladen = lesen(SCHLUESSEL);
+  } catch (e) {
+    console.warn("Hauptstand beschädigt, versuche die Kopie.", e);
+  }
+  if (!geladen) {
+    /* Zweite Chance: die Sicherheitskopie. Lieber ein paar Tage alt als weg. */
+    try {
+      geladen = lesen(KOPIE_SCHLUESSEL);
+      if (geladen) console.warn("Aus der Sicherheitskopie wiederhergestellt.");
+    } catch (e) {
+      console.warn("Auch die Kopie ist unbrauchbar.", e);
+    }
+  }
+  if (geladen) DP.stand = standAufbauen(geladen);
   DP.tagWechseln();
   return DP.stand;
 };
 
+let schreibZaehler = 0;
+
 DP.speichern = function () {
+  if (!DP.stand) return false;
+
+  /* Hat in der Zwischenzeit ein anderer Tab geschrieben? Dann nicht einfach
+     drueberbuegeln, sondern beide Staende zusammenfuehren. */
   try {
-    localStorage.setItem(SCHLUESSEL, JSON.stringify(DP.stand));
+    const fremdeRevision = Number(localStorage.getItem(REVISION_SCHLUESSEL) || 0);
+    if (fremdeRevision > (DP.stand.revision || 0)) {
+      const fremd = lesen(SCHLUESSEL);
+      if (fremd) DP.stand = DP.verschmelzen(DP.stand, standAufbauen(fremd));
+    }
+  } catch (e) { /* im Zweifel weiterschreiben – eigener Stand ist besser als keiner */ }
+
+  DP.stand.revision = (Number(DP.stand.revision) || 0) + 1;
+  DP.stand.gespeichertAm = Date.now();
+  const text = JSON.stringify(DP.stand);
+
+  try {
+    localStorage.setItem(SCHLUESSEL, text);
+    localStorage.setItem(REVISION_SCHLUESSEL, String(DP.stand.revision));
   } catch (e) {
-    console.warn("Speichern fehlgeschlagen.", e);
+    /* Meist Platzmangel. Erst die Kopie opfern, dann noch einmal versuchen. */
+    try {
+      localStorage.removeItem(KOPIE_SCHLUESSEL);
+      localStorage.setItem(SCHLUESSEL, text);
+      localStorage.setItem(REVISION_SCHLUESSEL, String(DP.stand.revision));
+    } catch (e2) {
+      DP.speicherLaeuft = { ok: false, grund: "Der Speicher ist voll oder gesperrt.", geprueft: true };
+      if (typeof DP.aufSpeicherfehler === "function") DP.aufSpeicherfehler(DP.speicherLaeuft);
+      return false;
+    }
   }
+
+  if (!DP.speicherLaeuft.ok) {
+    DP.speicherLaeuft = { ok: true, grund: null, geprueft: true };
+    if (typeof DP.aufSpeicherfehler === "function") DP.aufSpeicherfehler(DP.speicherLaeuft);
+  }
+
+  schreibZaehler++;
+  if (schreibZaehler % 12 === 0) {
+    try { localStorage.setItem(KOPIE_SCHLUESSEL, text); } catch (e) { /* Kopie ist Kür */ }
+  }
+  return true;
+};
+
+/* Zwei Staende zusammenfuehren, ohne dass etwas verloren geht. Im Zweifel
+   gewinnt immer der weiter fortgeschrittene Wert. */
+DP.verschmelzen = function (meins, fremd) {
+  const out = standAufbauen(JSON.parse(JSON.stringify(fremd)));
+  const max = (a, b) => Math.max(Number(a) || 0, Number(b) || 0);
+  const m = meins || DP.leererStand();
+
+  out.xp = max(m.xp, fremd.xp);
+  out.revision = max(m.revision, fremd.revision);
+  out.letzteSicherung = max(m.letzteSicherung, fremd.letzteSicherung);
+  out.codename = fremd.codename || m.codename;
+  out.prolog = !!(m.prolog || fremd.prolog);
+  out.einstufungGemacht = !!(m.einstufungGemacht || fremd.einstufungGemacht);
+
+  const ms = m.serie || {};
+  out.serie.tage = max(ms.tage, out.serie.tage);
+  out.serie.beste = max(ms.beste, out.serie.beste);
+  if (ms.letzterTag && (!out.serie.letzterTag || ms.letzterTag > out.serie.letzterTag)) {
+    out.serie.letzterTag = ms.letzterTag;
+  }
+
+  /* Karten: pro Aufgabe die, die oefter geuebt wurde. */
+  Object.keys(m.srs || {}).forEach(k => {
+    const a = m.srs[k], b = out.srs[k];
+    if (!b || (a.gesehen || 0) > (b.gesehen || 0)) out.srs[k] = a;
+  });
+
+  const mf = m.fortschritt || {};
+  out.fortschritt.modul = max(mf.modul, out.fortschritt.modul);
+  out.fortschritt.fertig = Array.from(new Set((out.fortschritt.fertig || []).concat(mf.fertig || [])));
+  Object.keys(mf.beat || {}).forEach(k => {
+    out.fortschritt.beat[k] = max((mf.beat || {})[k], out.fortschritt.beat[k]);
+  });
+  Object.keys(mf.briefing || {}).forEach(k => {
+    out.fortschritt.briefing[k] = Array.from(new Set((out.fortschritt.briefing[k] || []).concat((mf.briefing || {})[k] || [])));
+  });
+
+  out.orden = Array.from(new Set((out.orden || []).concat(m.orden || [])));
+
+  const mt = m.tag || {};
+  if (mt.datum && mt.datum === out.tag.datum) {
+    out.tag.sekunden = max(mt.sekunden, out.tag.sekunden);
+    out.tag.aufgaben = max(mt.aufgaben, out.tag.aufgaben);
+    out.tag.richtig = max(mt.richtig, out.tag.richtig);
+    out.tag.missionFertig = !!(mt.missionFertig || out.tag.missionFertig);
+  } else if (mt.datum && mt.datum > (out.tag.datum || "")) {
+    out.tag = mt;
+  }
+
+  const nachDatum = {};
+  (out.verlauf || []).concat(m.verlauf || []).forEach(t => {
+    const da = nachDatum[t.datum];
+    if (!da || (t.aufgaben || 0) > (da.aufgaben || 0)) nachDatum[t.datum] = t;
+  });
+  out.verlauf = Object.keys(nachDatum).sort().map(d => nachDatum[d]).slice(-400);
+
+  return out;
+};
+
+/* Ein anderer Tab hat geschrieben – uebernehmen, ohne Eigenes zu verlieren. */
+DP.fremdstandUebernehmen = function () {
+  try {
+    const fremd = lesen(SCHLUESSEL);
+    if (!fremd) return false;
+    if ((fremd.revision || 0) <= (DP.stand.revision || 0)) return false;
+    DP.stand = DP.verschmelzen(DP.stand, standAufbauen(fremd));
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+/* ---------- Laufende Mission sichern ----------
+   Damit ein abgebrochener Einsatz nicht komplett von vorn beginnen muss. */
+
+DP.missionSichern = function (zustand) {
+  try {
+    localStorage.setItem(MISSION_SCHLUESSEL, JSON.stringify(zustand));
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
+DP.missionHolen = function () {
+  try {
+    const roh = localStorage.getItem(MISSION_SCHLUESSEL);
+    if (!roh) return null;
+    const m = JSON.parse(roh);
+    if (!m || !Array.isArray(m.schritte) || !m.schritte.length) return null;
+    if (m.datum !== DP.heute()) return null;          /* von gestern: nicht fortsetzen */
+    if (m.index >= m.schritte.length) return null;    /* war schon durch */
+    return m;
+  } catch (e) {
+    return null;
+  }
+};
+
+DP.missionVerwerfen = function () {
+  try { localStorage.removeItem(MISSION_SCHLUESSEL); } catch (e) { /* egal */ }
 };
 
 DP.tagWechseln = function () {
@@ -190,7 +393,15 @@ DP.serieZaehlen = function () {
    der Stand als Text herausholen und woanders wieder einsetzen. */
 
 DP.exportieren = function () {
+  DP.stand.letzteSicherung = Date.now();
+  DP.speichern();
   return JSON.stringify(DP.stand);
+};
+
+/* Wie viele Tage ist die letzte Sicherung her? null = noch nie gesichert. */
+DP.sicherungAlter = function () {
+  if (!DP.stand.letzteSicherung) return null;
+  return Math.floor((Date.now() - DP.stand.letzteSicherung) / 86400000);
 };
 
 DP.importieren = function (text) {
@@ -203,12 +414,15 @@ DP.importieren = function (text) {
   if (!daten || typeof daten !== "object" || !daten.srs || typeof daten.srs !== "object") {
     return { ok: false, grund: "In dem Text steckt kein Spielstand." };
   }
-  DP.stand = Object.assign(DP.leererStand(), daten);
-  DP.stand.serie = Object.assign(DP.leererStand().serie, daten.serie || {});
-  DP.stand.tag = Object.assign(DP.leererStand().tag, daten.tag || {});
-  DP.stand.fortschritt = Object.assign(DP.leererStand().fortschritt, daten.fortschritt || {});
-  DP.stand.einstellungen = Object.assign(DP.leererStand().einstellungen, daten.einstellungen || {});
-  DP.speichern();
+  /* Der eingespielte Stand muss gewinnen, auch wenn auf diesem Gerät schon
+     gespielt wurde – sonst wäre die Sicherung nutzlos. */
+  const bisher = Number(DP.stand.revision) || 0;
+  DP.stand = DP.standAufbauen(daten);
+  DP.stand.revision = Math.max(bisher, Number(daten.revision) || 0) + 1;
+  DP.missionVerwerfen();
+  if (!DP.speichern()) {
+    return { ok: false, grund: "Übernommen, aber das Speichern hat nicht geklappt. Prüf, ob der Browser im privaten Modus läuft." };
+  }
   return {
     ok: true,
     karten: Object.keys(DP.stand.srs).length,

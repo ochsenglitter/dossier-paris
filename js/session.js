@@ -206,7 +206,6 @@
         });
         if (letzte) break;
       }
-      schritte.beats = anzahl;
     }
 
     return {
