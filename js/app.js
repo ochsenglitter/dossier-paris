@@ -1284,6 +1284,10 @@
           <button class="btn btn-geist" id="sicherungRaus" style="flex:1">Sicherung erstellen</button>
           <button class="btn btn-geist" id="sicherungRein" style="flex:1">Einspielen</button>
         </div>
+        <button class="btn btn-geist mt" id="alsLink">Fortschritt als Link mitnehmen</button>
+        <div class="klein grau" style="margin-top:6px">Für den Wechsel in einen anderen Browser
+        oder auf ein anderes Gerät: Der Link enthält deinen kompletten Stand. Einmal antippen,
+        einfügen, öffnen – fertig.</div>
         <div id="sicherungsfeld"></div>
       </div>
 
@@ -1334,6 +1338,48 @@
         }
         feld.setAttribute("readonly", "readonly");
       });
+    });
+
+    auf("#alsLink", "click", async () => {
+      const knopf = q("#alsLink");
+      const feld = q("#sicherungsfeld");
+      knopf.textContent = "Packe zusammen …";
+      let link;
+      try {
+        /* Auf die Adresse zeigen, auf der wir gerade laufen – so funktioniert der
+           Link auch für einen Wechsel Browser zu Browser, nicht nur beim Umzug. */
+        const hier = location.origin + location.pathname;
+        link = await DP.umzugsLink(hier);
+      } catch (e) {
+        knopf.textContent = "Ging nicht – nimm die Sicherung als Text.";
+        return;
+      }
+      knopf.textContent = "Fortschritt als Link mitnehmen";
+      const zuLang = link.length > 60000;
+      feld.innerHTML = `
+        ${zuLang
+          ? `<div class="rueckmeldung fast mt"><div class="kopfzeile">Zu groß für einen Link</div>
+             <div class="klein">Dein Stand ist zu umfangreich. Nimm stattdessen oben
+             „Sicherung erstellen“ und spiel den Text drüben wieder ein.</div></div>`
+          : `<div class="klein grau mt">Link kopiert? Dann im anderen Browser einfügen und öffnen.
+             Dein Fortschritt kommt mit und wird dort mit einem eventuell vorhandenen
+             Stand zusammengeführt.</div>
+             <textarea class="eingabe mt" id="linkFeld" rows="3" readonly
+               style="font-size:11px;resize:vertical">${esc(link)}</textarea>
+             <button class="btn btn-haupt mt" id="linkKopieren2">Link kopieren</button>`}`;
+      if (!zuLang) {
+        auf("#linkKopieren2", "click", () => {
+          const tf = q("#linkFeld");
+          tf.removeAttribute("readonly"); tf.select();
+          try {
+            navigator.clipboard.writeText(link);
+            q("#linkKopieren2").textContent = "Kopiert.";
+          } catch (e) {
+            q("#linkKopieren2").textContent = "Markiert – jetzt selbst kopieren.";
+          }
+          tf.setAttribute("readonly", "readonly");
+        });
+      }
     });
 
     auf("#sicherungRein", "click", () => {
@@ -1469,6 +1515,19 @@
       });
     });
   }
+
+  /* Wird ein Umzugslink in eine Adresszeile eingefuegt, in der die Seite schon
+     offen ist, aendert sich nur der Teil hinter dem #. Der Browser laedt dann
+     nicht neu – ohne das hier bliebe der mitgebrachte Fortschritt unbemerkt
+     liegen. Genau so fuegt man einen Link aber auf dem Handy ein. */
+  window.addEventListener("hashchange", () => {
+    const code = DP.mitgebrachterStand();
+    if (!code || ansicht === "umzug") return;
+    uhrStoppen();
+    DP.audio.stopp();
+    DP.umzugLaeuft = true;
+    zeigeUmzugEmpfang(code);
+  });
 
   const mitgebracht = DP.mitgebrachterStand();
   if (mitgebracht) { DP.umzugLaeuft = true; zeigeUmzugEmpfang(mitgebracht); }
