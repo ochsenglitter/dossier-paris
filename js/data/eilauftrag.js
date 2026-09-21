@@ -5,7 +5,20 @@
    Rechtschreibung, weil im Test jeder Akzent zaehlt.
 
    Quelle: Unité 1 "Vive les échanges!", Vokabular S. 174-177.
-   Frist anpassen: einfach das Datum unten aendern. */
+   Frist anpassen: einfach das Datum unten aendern.
+
+   Schreibweise der Eintraege, bewusst genau wie im Buch:
+
+   - Formen, die im Buch mit Schraegstrich stehen (excité / excitée), sind
+     EIN Eintrag, nicht zwei. Die App fragt die Formen einzeln ab, zaehlt sie
+     aber als ein Wort.
+   - Der Artikel gehoert dazu, wenn das Buch ihn angibt (un lycée, l'Allemagne).
+   - Platzhalter wie qn/qc und Abkuerzungen wie jdn./etw. stehen NICHT im
+     Eintrag – er soll genau das schreiben, was im Test verlangt wird.
+
+   Die Schluessel fuer den Fortschritt haengen am franzoesischen Wort selbst,
+   nicht an seiner Position in der Liste. Umsortieren oder Zusammenlegen kostet
+   also keinen Fortschritt. */
 
 window.EILAUFTRAG = {
   id: "eil1",
@@ -31,17 +44,17 @@ window.EILAUFTRAG = {
       woerter: [
         ["Vive ...!", "Es lebe ...!; Es leben ...!"],
         ["un échange", "ein Tausch; ein Austausch", "é wie in école"],
-        ["échanger qc", "etw. (aus)tauschen", "é am Anfang"],
+        ["échanger", "austauschen", "é am Anfang"],
         ["plusieurs", "mehrere", "endet auf -eurs"],
         ["une possibilité", "eine Möglichkeit", "zwei s, é am Ende"],
         ["un échange scolaire", "ein Schüleraustausch"],
         ["un séjour", "ein Aufenthalt", "é, dann jour"],
         ["un accueil", "ein Empfang", "cc und -ueil, nicht -euil"],
         ["une famille d'accueil", "eine Gastfamilie", "Apostroph nach d"],
-        ["franco-allemand", "deutsch-französisch", "mit Bindestrich"],
+        ["franco-allemand / franco-allemande", "deutsch-französisch", "mit Bindestrich, weiblich mit -e"],
         ["l'OFAJ", "das DFJW"],
         ["un lycée", "ein Gymnasium; ein Lycée", "y und é am Ende"],
-        ["excité", "aufgeregt", "é in der Mitte und am Ende"],
+        ["excité / excitée", "aufgeregt", "é in der Mitte und am Ende"],
         ["un programme d'échange", "ein Austauschprogramm", "programme mit zwei m"],
         ["l'Allemagne", "Deutschland", "zwei l, -gne am Ende"],
         ["l'allemand", "Deutsch (die Sprache)"]
@@ -50,15 +63,14 @@ window.EILAUFTRAG = {
     {
       id: "b", name: "Kontakt und Erfahrung",
       woerter: [
-        ["un correspondant", "ein Brieffreund; ein Austauschpartner", "zwei r"],
-        ["une correspondante", "eine Brieffreundin; eine Austauschpartnerin"],
+        ["un correspondant / une correspondante", "ein Brieffreund / eine Brieffreundin", "zwei r, weiblich mit -e"],
         ["difficile", "schwierig", "zwei f, ein c"],
-        ["supporter qn", "jdn. aushalten; jdn. ertragen", "zwei p"],
+        ["supporter", "aushalten; ertragen", "zwei p"],
         ["une annonce", "eine Anzeige; eine Annonce", "zwei n"],
         ["une expérience", "eine Erfahrung", "é in der Mitte, -ience am Ende"],
         ["un progrès", "ein Fortschritt", "accent grave auf dem è"],
-        ["rechercher qn", "jdn. suchen"],
-        ["aller chercher qn", "jdn. abholen"],
+        ["rechercher", "suchen"],
+        ["aller chercher", "abholen"],
         ["une phrase", "ein Satz", "ph wie in Photo"],
         ["un mot", "ein Wort", "stummes t am Ende"],
         ["un début", "ein Anfang", "é und stummes t"],
@@ -72,23 +84,20 @@ window.EILAUFTRAG = {
     {
       id: "c", name: "Vergleichen und beschreiben",
       woerter: [
-        ["tout", "ganz; alle (männlich Einzahl)"],
-        ["toute", "ganz (weiblich Einzahl)"],
-        ["tous", "alle (männlich Mehrzahl)"],
-        ["toutes", "alle (weiblich Mehrzahl)"],
+        ["tout / toute / tous / toutes", "ganz; alle", "alle vier Formen beginnen mit tou-"],
         ["aussi rouge que", "so rot wie"],
         ["plus long que", "länger als"],
         ["moins disponible que", "weniger verfügbar als"],
-        ["pareil", "gleich", "endet auf -eil"],
+        ["pareil / pareille", "gleich", "endet auf -eil, weiblich -eille"],
         ["timide", "schüchtern"],
         ["disponible", "verfügbar"],
-        ["meilleur", "besser (Steigerung von bon)", "zwei l"],
+        ["meilleur / meilleure", "besser (Steigerung von bon)", "zwei l"],
         ["pire", "schlimmer (Steigerung von grave)"],
         ["magnifique", "wunderschön; großartig", "-que am Ende"],
-        ["poli", "höflich"],
-        ["gentil", "nett", "das l am Ende spricht man nicht"],
-        ["impatient", "ungeduldig"],
-        ["déçu", "enttäuscht", "é und ç mit Cedille"],
+        ["poli / polie", "höflich"],
+        ["gentil / gentille", "nett", "das l am Ende spricht man nicht, weiblich -ille"],
+        ["impatient / impatiente", "ungeduldig"],
+        ["déçu / déçue", "enttäuscht", "é und ç mit Cedille"],
         ["grave", "schlimm"],
         ["possible", "möglich"]
       ]
@@ -99,10 +108,8 @@ window.EILAUFTRAG = {
         ["la campagne", "das Land (im Gegensatz zur Stadt)", "-gne am Ende"],
         ["la réalité", "die Wirklichkeit; die Realität", "é ... é"],
         ["la nuit", "die Nacht"],
-        ["un âne", "ein Esel", "Zirkumflex auf dem â"],
-        ["une ânesse", "eine Eselin"],
-        ["un chien", "ein Hund"],
-        ["une chienne", "eine Hündin", "zwei n"],
+        ["un âne / une ânesse", "ein Esel / eine Eselin", "Zirkumflex auf dem â, weiblich -esse"],
+        ["un chien / une chienne", "ein Hund / eine Hündin", "weiblich mit zwei n"],
         ["par contre", "hingegen; dagegen"],
         ["à une heure de ...", "eine Stunde entfernt von ..."]
       ]
@@ -110,13 +117,13 @@ window.EILAUFTRAG = {
     {
       id: "e", name: "Reagieren und beruhigen",
       woerter: [
-        ["être embêté", "verlegen sein; jdm. unangenehm sein", "ê mit Zirkumflex"],
-        ["exprimer qc", "etw. ausdrücken"],
+        ["être embêté / être embêtée", "verlegen sein; unangenehm sein", "ê mit Zirkumflex"],
+        ["exprimer", "ausdrücken"],
         ["une expression", "ein Ausdruck", "zwei s"],
-        ["essayer de faire qc", "versuchen, etw. zu tun", "zwei s, dann -ayer"],
-        ["répéter qc", "etw. wiederholen", "zweimal é"],
-        ["ressembler à qn", "jdm. ähnlich sein", "zwei s"],
-        ["confondre qc", "etw. verwechseln"],
+        ["essayer de faire", "versuchen zu tun", "zwei s, dann -ayer"],
+        ["répéter", "wiederholen", "zweimal é"],
+        ["ressembler à", "ähnlich sein", "zwei s"],
+        ["confondre", "verwechseln"],
         ["Ne t'en fais pas.", "Mach dir nichts draus.", "Apostroph nach t"],
         ["Ne t'inquiète pas.", "Mach dir keine Sorgen.", "accent grave auf dem è"],
         ["T'inquiète.", "Keine Panik."],
@@ -128,11 +135,11 @@ window.EILAUFTRAG = {
     {
       id: "w", name: "Wiederholung aus früheren Unités", wiederholung: true,
       woerter: [
-        ["participer à qc", "an etw. teilnehmen"],
-        ["choisir qc", "etw. auswählen"],
-        ["aider qn", "jdm. helfen"],
-        ["perdre qc", "etw. verlieren"],
-        ["préparer qc", "etw. vorbereiten"],
+        ["participer à", "teilnehmen an"],
+        ["choisir", "auswählen"],
+        ["aider", "helfen"],
+        ["perdre", "verlieren"],
+        ["préparer", "vorbereiten"],
         ["facile", "leicht"],
         ["un voyage", "eine Reise"],
         ["un mois", "ein Monat"],

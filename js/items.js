@@ -150,50 +150,109 @@
      heraus, einmal nach Gehoer. Beides mit strenger Rechtschreibung. */
 
   let EIL = null;
+  let EILW = null;
+
+  /* Schluessel am Wort statt an der Listenposition.
+     Vorher hiess die dritte Vokabel der Gruppe b schlicht "eil:b2". Wird ein
+     Eintrag zusammengelegt oder umsortiert, rutscht damit der gesamte
+     Fortschritt der Gruppe auf die falschen Woerter. Jetzt haengt der
+     Schluessel am franzoesischen Wort selbst und uebersteht jede Aenderung
+     an der Liste. */
+  /* Dieselbe Rechenvorschrift liegt in core.js: Das Umhaengen alter
+     Schluessel beim Laden muss exakt dieselben Kuerzel treffen. */
+  const eilKuerzel = DP.eilKuerzel;
+
+  /* Bei Eintraegen mit Schraegstrich ("excité / excitée") ist das EIN Wort mit
+     mehreren Schreibweisen – so steht es im Buch und so zaehlt es hier auch.
+     Abgefragt werden die Formen trotzdem einzeln, sonst uebt er die weibliche
+     Form nie. */
+  const FORMNAMEN = {
+    2: ["", "weibliche Form"],
+    3: ["", "weibliche Form", "Mehrzahl"],
+    4: ["", "weibliche Form", "männliche Mehrzahl", "weibliche Mehrzahl"]
+  };
+
+  /* Flache Liste aller Eilauftrag-Woerter, damit Aufgabenbau, Fortschritts-
+     zaehlung und Missionsplanung dieselben Schluessel benutzen. */
+  DP.eilWoerter = function () {
+    if (EILW) return EILW;
+    EILW = [];
+    const E = window.EILAUFTRAG;
+    if (!E) return EILW;
+    const vergeben = {};
+    E.gruppen.forEach(gruppe => {
+      gruppe.woerter.forEach(w => {
+        let k = eilKuerzel(w[0]);
+        if (vergeben[k]) k = k + (++vergeben[k]);       /* Namensgleichheit */
+        else vergeben[k] = 1;
+        const formen = w[0].split(" / ").map(s => s.trim()).filter(Boolean);
+        const deTeile = w[1].split(" / ").map(s => s.trim());
+        EILW.push({
+          fr: w[0], de: w[1], tipp: w[2] || null,
+          basis: "eil:" + k,
+          gruppe: gruppe.id, thema: gruppe.name,
+          formen: formen,
+          formDe: deTeile.length === formen.length ? deTeile : null,
+          formName: FORMNAMEN[formen.length] || null
+        });
+      });
+    });
+    return EILW;
+  };
 
   function eilBauen() {
     EIL = [];
     const E = window.EILAUFTRAG;
     if (!E) return;
 
-    const alleDe = [];
-    E.gruppen.forEach(g => g.woerter.forEach(w => alleDe.push(w[1])));
+    const woerter = DP.eilWoerter();
+    const alleDe = woerter.map(w => w.de);
 
-    E.gruppen.forEach(gruppe => {
-      gruppe.woerter.forEach((w, i) => {
-        const fr = w[0], de = w[1], tipp = w[2] || null;
-        const basis = "eil:" + gruppe.id + i;
-        const andere = gruppe.woerter.map(x => x[1]).filter(x => x !== de);
+    woerter.forEach(w => {
+      const andere = woerter.filter(x => x.gruppe === w.gruppe && x.de !== w.de).map(x => x.de);
 
-        /* Eintraege mit Platzhalter ("Vive ...!") oder Abkuerzungen (OFAJ)
-           lassen sich weder sinnvoll diktieren noch abtippen – die gibt es
-           nur als Bedeutungsfrage. */
-        const schreibbar = fr.indexOf("...") === -1 && !/[A-Z]{3,}/.test(fr);
+      /* Eintraege mit Platzhalter ("Vive ...!") oder Abkuerzungen (OFAJ)
+         lassen sich weder sinnvoll diktieren noch abtippen – die gibt es
+         nur als Bedeutungsfrage. */
+      const schreibbar = w.formen[0].indexOf("...") === -1 && !/[A-Z]{3,}/.test(w.formen[0]);
 
-        if (schreibbar) {
+      if (schreibbar) {
+        const deEins = w.formDe ? w.formDe[0] : w.de;
+        EIL.push({
+          key: w.basis + ":tip", eil: true, streng: true, wort: w.basis, gruppe: w.gruppe,
+          modul: "eil1", thema: w.thema, typ: "tippen",
+          frage: "Schreib auf Französisch: <b>" + deEins + "</b>",
+          loesung: w.formen[0], tipp: w.tipp, sprechen: w.formen[0]
+        });
+
+        /* Diktat nur auf der Grundform: toute und toutes klingen gleich,
+           nach Gehoer waere das nicht zu entscheiden. */
+        EIL.push({
+          key: w.basis + ":dik", eil: true, streng: true, wort: w.basis, gruppe: w.gruppe,
+          modul: "eil1", thema: "Diktat", typ: "diktat",
+          frage: "Hör zu und schreib genau das auf, was du hörst.",
+          loesung: w.formen[0], tipp: w.tipp, sprechen: w.formen[0]
+        });
+
+        /* Die weiteren Formen desselben Wortes – gezielt und einzeln. */
+        for (let j = 1; j < w.formen.length; j++) {
+          const name = (w.formName && w.formName[j]) || "andere Form";
           EIL.push({
-            key: basis + ":tip", eil: true, streng: true,
-            modul: "eil1", thema: gruppe.name, typ: "tippen",
-            frage: "Schreib auf Französisch: <b>" + de + "</b>",
-            loesung: fr, tipp: tipp, sprechen: fr
-          });
-
-          EIL.push({
-            key: basis + ":dik", eil: true, streng: true,
-            modul: "eil1", thema: "Diktat", typ: "diktat",
-            frage: "Hör zu und schreib genau das auf, was du hörst.",
-            loesung: fr, tipp: tipp, sprechen: fr
+            key: w.basis + ":f" + j, eil: true, streng: true, wort: w.basis, gruppe: w.gruppe,
+            modul: "eil1", thema: w.thema, typ: "tippen", form: true,
+            frage: "<b>" + w.formen[0] + "</b> – wie schreibt man die " + name + "?",
+            loesung: w.formen[j], tipp: w.tipp, sprechen: w.formen[j]
           });
         }
+      }
 
-        EIL.push({
-          key: basis + ":sinn", eil: true,
-          modul: "eil1", thema: gruppe.name, typ: "mc",
-          frage: "Was bedeutet <b>" + fr + "</b>?",
-          loesung: de,
-          optionen: optionenBauen(de, andere, alleDe, 4, fr),
-          sprechen: fr
-        });
+      EIL.push({
+        key: w.basis + ":sinn", eil: true, wort: w.basis, gruppe: w.gruppe,
+        modul: "eil1", thema: w.thema, typ: "mc",
+        frage: "Was bedeutet <b>" + w.fr + "</b>?",
+        loesung: w.de,
+        optionen: optionenBauen(w.de, andere, alleDe, 4, w.fr),
+        sprechen: w.formen[0]
       });
     });
 
@@ -258,24 +317,29 @@
   };
 
   /* Wie viele der Wörter sitzen? Ein Wort gilt als sicher, wenn die
-     Schreibaufgabe UND das Diktat mindestens einmal streng richtig waren. */
+     Schreibaufgabe UND das Diktat mindestens einmal streng richtig waren –
+     und bei Woertern mit mehreren Formen auch jede weitere Form. Die
+     weibliche Form ungeprueft durchgehen zu lassen waere im Test wertlos. */
   DP.eilStand = function () {
     const E = window.EILAUFTRAG;
     if (!E) return { gesamt: 0, sitzt: 0, angefasst: 0, tage: null };
     let gesamt = 0, sitzt = 0, angefasst = 0;
-    E.gruppen.forEach(gruppe => {
-      gruppe.woerter.forEach((w, i) => {
-        gesamt++;
-        const a = DP.stand.srs["eil:" + gruppe.id + i + ":tip"];
-        const b = DP.stand.srs["eil:" + gruppe.id + i + ":dik"];
-        const c = DP.stand.srs["eil:" + gruppe.id + i + ":sinn"];
-        if ((a && a.gesehen) || (b && b.gesehen) || (c && c.gesehen)) angefasst++;
-        if (a || b) {
-          if (a && a.r >= 2 && b && b.r >= 1) sitzt++;
-        } else if (c && c.r >= 2) {
-          sitzt++;                       /* nur als Bedeutungsfrage prüfbar */
-        }
-      });
+    DP.eilWoerter().forEach(w => {
+      gesamt++;
+      const a = DP.stand.srs[w.basis + ":tip"];
+      const b = DP.stand.srs[w.basis + ":dik"];
+      const c = DP.stand.srs[w.basis + ":sinn"];
+      if ((a && a.gesehen) || (b && b.gesehen) || (c && c.gesehen)) angefasst++;
+      let formenSitzen = true;
+      for (let j = 1; j < w.formen.length; j++) {
+        const f = DP.stand.srs[w.basis + ":f" + j];
+        if (!f || f.r < 1) { formenSitzen = false; break; }
+      }
+      if (a || b) {
+        if (a && a.r >= 2 && b && b.r >= 1 && formenSitzen) sitzt++;
+      } else if (c && c.r >= 2) {
+        sitzt++;                       /* nur als Bedeutungsfrage prüfbar */
+      }
     });
     let tage = null;
     if (E.frist) tage = DP.tageDiff(DP.heute(), E.frist);

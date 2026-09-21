@@ -9,7 +9,7 @@
    zu lange braucht), den Zwischenspeicher nehmen. Die App ist klein genug,
    dass das nicht auffaellt, und offline funktioniert sie weiterhin. */
 
-const CACHE = "dossier-paris-v7";
+const CACHE = "dossier-paris-v8";
 const NETZ_TIMEOUT = 2500;
 
 const DATEIEN = [

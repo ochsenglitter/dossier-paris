@@ -6,7 +6,7 @@ window.DP = DP;
 /* Sichtbar in den Einstellungen. Damit laesst sich in zwei Sekunden klaeren,
    ob auf einem Geraet wirklich die aktuelle Fassung laeuft – genau diese Frage
    hat einmal einen halben Tag gekostet. */
-DP.VERSION = "2026-09-21-d";
+DP.VERSION = "2026-09-21-e";
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -267,6 +267,75 @@ DP.zuletztGespeichert = function () {
   return "vor " + Math.round(sek / 86400) + " Tagen";
 };
 
+/* ---- Eilauftrag: alte Positions-Schluessel auf Wort-Schluessel umhaengen ----
+   Bis Fassung 2026-09-21-d hiess die dritte Vokabel der Gruppe b schlicht
+   "eil:b2". Als die Liste ueberarbeitet wurde – zusammengehoerige Formen wie
+   "un correspondant / une correspondante" sind jetzt EIN Eintrag statt zwei –
+   haben sich diese Positionen verschoben. Ohne Umhaengen saesse der Fortschritt
+   danach auf den falschen Woertern.
+
+   Die Tabelle sagt fuer jede alte Position, zu welchem Wort sie heute gehoert.
+   Zwei alte Eintraege, die heute einer sind, werden zusammengefuehrt: es
+   gewinnt der weiter geuebte. Danach sind die alten Schluessel weg und der
+   Umbau passiert kein zweites Mal. */
+const EIL_ALT = {
+  a: ["Vive ...!", "un échange", "échanger", "plusieurs", "une possibilité",
+      "un échange scolaire", "un séjour", "un accueil", "une famille d'accueil",
+      "franco-allemand", "l'OFAJ", "un lycée", "excité", "un programme d'échange",
+      "l'Allemagne", "l'allemand"],
+  b: ["un correspondant", "un correspondant", "difficile", "supporter", "une annonce",
+      "une expérience", "un progrès", "rechercher", "aller chercher", "une phrase",
+      "un mot", "un début", "au début", "un pays", "le mal du pays", "des chips",
+      "le skate"],
+  c: ["tout", "tout", "tout", "tout", "aussi rouge que", "plus long que",
+      "moins disponible que", "pareil", "timide", "disponible", "meilleur", "pire",
+      "magnifique", "poli", "gentil", "impatient", "déçu", "grave", "possible"],
+  d: ["la campagne", "la réalité", "la nuit", "un âne", "un âne", "un chien",
+      "un chien", "par contre", "à une heure de ..."],
+  e: ["être embêté", "exprimer", "une expression", "essayer de faire", "répéter",
+      "ressembler à", "confondre", "Ne t'en fais pas.", "Ne t'inquiète pas.",
+      "T'inquiète.", "Ça craint !", "Excusez-moi !", "Excuse-moi !"],
+  w: ["participer à", "choisir", "aider", "perdre", "préparer", "facile",
+      "un voyage", "un mois", "une journée", "depuis", "ensuite"]
+};
+
+DP.eilKuerzel = function (fr) {
+  return String(fr).split(" / ")[0]
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "")
+    .slice(0, 18) || "x";
+};
+
+/* Der weiter geuebte von zwei Staenden desselben Wortes. */
+function besserer(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const zus = Object.assign({}, (a.r || 0) >= (b.r || 0) ? a : b);
+  zus.r = Math.max(a.r || 0, b.r || 0);
+  zus.gesehen = Math.max(a.gesehen || 0, b.gesehen || 0);
+  zus.ko = Math.max(a.ko || 0, b.ko || 0);
+  if (a.faellig && b.faellig) zus.faellig = a.faellig < b.faellig ? a.faellig : b.faellig;
+  return zus;
+}
+
+function eilSchluesselWandern(s) {
+  if (!s.srs) return s;
+  const alt = Object.keys(s.srs).filter(k => /^eil:[abcdew]\d+:/.test(k));
+  if (!alt.length) return s;
+  alt.forEach(k => {
+    const teile = k.match(/^eil:([abcdew])(\d+):(.+)$/);
+    if (!teile) return;
+    const liste = EIL_ALT[teile[1]];
+    const wort = liste && liste[Number(teile[2])];
+    const eintrag = s.srs[k];
+    delete s.srs[k];
+    if (!wort || !eintrag) return;
+    const neu = "eil:" + DP.eilKuerzel(wort) + ":" + teile[3];
+    s.srs[neu] = besserer(s.srs[neu], eintrag);
+  });
+  return s;
+}
+
 function standAufbauen(roh) {
   const s = Object.assign(DP.leererStand(), roh);
   s.serie = Object.assign(DP.leererStand().serie, roh.serie || {});
@@ -279,6 +348,7 @@ function standAufbauen(roh) {
   if (!Array.isArray(s.fortschritt.fertig)) s.fortschritt.fertig = [];
   if (!s.fortschritt.beat || typeof s.fortschritt.beat !== "object") s.fortschritt.beat = {};
   if (!s.fortschritt.briefing || typeof s.fortschritt.briefing !== "object") s.fortschritt.briefing = {};
+  eilSchluesselWandern(s);
   return s;
 }
 DP.standAufbauen = standAufbauen;

@@ -126,16 +126,78 @@
 
       const alleEil = DP.eilItems().filter(verfuegbar);
       const heute = DP.heute();
-      const neuDran = [], faellig = [], rest = [];
-      alleEil.forEach(i => {
-        const k = DP.stand.srs[i.key];
-        if (!k) neuDran.push(i);
-        else if (k.faellig <= heute) faellig.push(i);
-        else rest.push(i);
-      });
-      /* Schwaechstes zuerst: was er schon mal falsch hatte, kommt wieder. */
-      faellig.sort((a, b) => DP.stand.srs[a.key].r - DP.stand.srs[b.key].r);
-      rest.sort((a, b) => DP.stand.srs[a.key].r - DP.stand.srs[b.key].r);
+      const woerterBenutzt = new Set();
+
+      /* Wie dringend ist diese Aufgabe?
+         Vorher lief die Liste stur von vorn nach hinten durch: immer wieder
+         dieselben Woerter aus Gruppe a, waehrend hinten welche lagen, die er
+         noch nie gesehen hatte. Jetzt entscheidet, wie gut er das Wort schon
+         kann – was sitzt, kommt fast nicht mehr, was wackelt, kommt oft. */
+      function dringlichkeit(it) {
+        const k = DP.stand.srs[it.key];
+        if (!k) return 70;                               /* noch nie gesehen */
+        if (k.ko > 0 && k.r <= 1) return 100;            /* zuletzt daneben */
+        const faellig = k.faellig <= heute;
+        if (k.r >= 4) return faellig ? 8 : 2;            /* sitzt sicher */
+        if (k.r >= 3) return faellig ? 20 : 4;
+        if (faellig) return Math.max(12, 60 - k.r * 8);
+        return Math.max(3, 16 - k.r * 3);
+      }
+
+      /* Ziehen mit Gewicht, ohne Zuruecklegen: dringend heisst wahrscheinlich,
+         nicht sicher. So bleibt eine Mission auch dann abwechslungsreich, wenn
+         oben immer dieselben Wackelkandidaten stehen. */
+      function ziehen(liste, anzahl) {
+        const rest = liste.slice(), out = [];
+        while (out.length < anzahl && rest.length) {
+          let summe = 0;
+          for (let i = 0; i < rest.length; i++) summe += dringlichkeit(rest[i]);
+          let t = Math.random() * summe, treffer = rest.length - 1;
+          for (let i = 0; i < rest.length; i++) {
+            t -= dringlichkeit(rest[i]);
+            if (t <= 0) { treffer = i; break; }
+          }
+          out.push(rest.splice(treffer, 1)[0]);
+        }
+        return out;
+      }
+
+      /* Nicht sechs Woerter derselben Buchseite hintereinander: nach Gruppen
+         sortieren und reihum eins aus jeder nehmen. */
+      function verteilen(liste) {
+        const toepfe = {};
+        liste.forEach(i => {
+          const g = i.gruppe || i.thema || "x";
+          (toepfe[g] = toepfe[g] || []).push(i);
+        });
+        const reihen = DP.mische(Object.keys(toepfe)).map(k => DP.mische(toepfe[k]));
+        const out = [];
+        let weiter = true;
+        while (weiter) {
+          weiter = false;
+          reihen.forEach(r => { if (r.length) { out.push(r.shift()); weiter = true; } });
+        }
+        return out;
+      }
+
+      /* Ein Wort pro Mission nur einmal – sonst kommt dasselbe Wort direkt
+         hintereinander als Diktat und als Schreibaufgabe. */
+      function zieh(typ, anzahl) {
+        const out = [];
+        /* Einzeln ziehen und jedes Mal neu aussieben: sonst koennen in EINEM
+           Zug beide Aufgaben desselben Wortes erwischt werden – die
+           Schreibaufgabe und die zu seiner weiblichen Form. */
+        for (let n = 0; n < anzahl; n++) {
+          const kandidaten = alleEil.filter(i =>
+            i.typ === typ && !benutzt.has(i.key) && !woerterBenutzt.has(i.wort || i.key));
+          if (!kandidaten.length) break;
+          const gezogen = ziehen(kandidaten, 1)[0];
+          benutzt.add(gezogen.key);
+          if (gezogen.wort) woerterBenutzt.add(gezogen.wort);
+          out.push(gezogen);
+        }
+        return verteilen(out);
+      }
 
       const stand = DP.eilStand();
       schritte.push({
@@ -147,66 +209,64 @@
         thema: E.unite + " – " + E.titel
       });
 
-      /* Neue Woerter zuerst einmal ansehen, sonst raet er nur. */
-      const nochNie = [];
-      E.gruppen.forEach(g => g.woerter.forEach((w, i) => {
-        if (nochNie.length >= 6) return;
-        if (DP.stand.srs["eil:" + g.id + i + ":tip"]) return;
-        if (DP.stand.srs["eil:" + g.id + i + ":sinn"]) return;
-        if (benutzt.has("lern:eil:" + g.id + i)) return;
-        benutzt.add("lern:eil:" + g.id + i);
-        nochNie.push({ fr: w[0], de: w[1], tipp: w[2] || null });
-      }));
+      /* Neue Woerter zuerst einmal ansehen, sonst raet er nur. Auch hier
+         quer durch die Liste statt stur von vorn. */
+      const nieGesehen = DP.eilWoerter().filter(w =>
+        !DP.stand.srs[w.basis + ":tip"] &&
+        !DP.stand.srs[w.basis + ":sinn"] &&
+        !benutzt.has("lern:" + w.basis));
+      const nochNie = verteilen(DP.mische(nieGesehen)).slice(0, 6);
+      nochNie.forEach(w => benutzt.add("lern:" + w.basis));
       if (nochNie.length) {
         schritte.push({ art: "karte", stil: "phase", titel: "NEUE WÖRTER",
           text: [nochNie.length + " Wörter, die du noch nie gesehen hast. Erst anschauen, gleich musst du sie schreiben."] });
-        nochNie.forEach(v => schritte.push({ art: "lernkarte", vokabel: v, modul: "eil1" }));
+        nochNie.forEach(w => schritte.push({
+          art: "lernkarte", modul: "eil1",
+          vokabel: { fr: w.fr, de: w.de, tipp: w.tipp }
+        }));
       }
 
-      function nimm(liste, typ, anzahl) {
-        const out = [];
-        for (let i = 0; i < liste.length && out.length < anzahl; i++) {
-          const it = liste[i];
-          if (benutzt.has(it.key)) continue;
-          if (typ && it.typ !== typ) continue;
-          benutzt.add(it.key);
-          out.push(it);
-        }
-        return out;
-      }
-      const topf = faellig.concat(neuDran).concat(rest);
-
-      const diktat = nimm(topf, "diktat", 6);
+      const diktat = zieh("diktat", 6);
       if (diktat.length) {
         schritte.push({ art: "karte", stil: "phase", titel: "DICTÉE",
           text: ["Funkspruch. Du hörst es, du schreibst es. So oft anhören, wie du willst."] });
         diktat.forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
       }
 
-      const schreiben = nimm(topf, "tippen", 10);
+      const schreiben = zieh("tippen", 10);
       if (schreiben.length) {
         schritte.push({ art: "karte", stil: "phase", titel: "ÉCRITURE",
           text: ["Aus dem Deutschen heraus. Jeder Accent zählt."] });
         schreiben.forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
       }
 
-      const sinn = nimm(topf, "mc", 6).concat(nimm(topf, "bauen", 2));
+      const sinn = zieh("mc", 6).concat(zieh("bauen", 2));
       if (sinn.length) {
         schritte.push({ art: "karte", stil: "phase", titel: "SENS",
           text: ["Schneller Durchgang: Was heißt was?"] });
-        DP.mische(sinn).forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
+        verteilen(sinn).forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
       }
 
-      /* Prüfstelle: nur das, was er zuletzt falsch hatte. */
-      const wackelig = topf.filter(i => {
-        const k = DP.stand.srs[i.key];
-        return k && k.ko > 0 && k.r <= 1 && !benutzt.has(i.key);
-      }).slice(0, 5);
-      wackelig.forEach(i => benutzt.add(i.key));
+      /* Prüfstelle: nur das, was er zuletzt falsch hatte. Hier darf ein Wort
+         aus dieser Mission bewusst ein zweites Mal kommen. */
+      const wackelig = [];
+      const wackelWoerter = new Set();
+      for (let n = 0; n < 5; n++) {
+        const kandidaten = alleEil.filter(i => {
+          const k = DP.stand.srs[i.key];
+          return k && k.ko > 0 && k.r <= 1 && !benutzt.has(i.key)
+            && !wackelWoerter.has(i.wort || i.key);
+        });
+        if (!kandidaten.length) break;
+        const gezogen = ziehen(kandidaten, 1)[0];
+        benutzt.add(gezogen.key);
+        wackelWoerter.add(gezogen.wort || gezogen.key);
+        wackelig.push(gezogen);
+      }
       if (wackelig.length) {
         schritte.push({ art: "karte", stil: "boss", titel: "CONTRÔLE",
           text: ["Die " + wackelig.length + ", die dich zuletzt erwischt haben. Jetzt nochmal."] });
-        wackelig.forEach(i => schritte.push({ art: "item", item: i, phase: "boss", eilBoss: true }));
+        verteilen(wackelig).forEach(i => schritte.push({ art: "item", item: i, phase: "boss", eilBoss: true }));
       }
 
       return {
