@@ -489,6 +489,112 @@ DP.serieZaehlen = function () {
   if (s.tage > s.beste) s.beste = s.tage;
 };
 
+/* ---------- Umzug auf eine andere Adresse ----------
+   Der Browserspeicher gehoert zur Adresse. Wer die App von claude.ai auf die
+   eigene Seite umzieht, wuerde dort bei null anfangen – deshalb laesst sich
+   der ganze Stand in einen Link packen und auf der neuen Adresse wieder
+   auslesen. Gepackt mit gzip, damit auch ein Stand von Monaten in eine URL
+   passt; wo der Browser das nicht kann, bleibt der Weg ueber die Zwischenablage. */
+
+DP.NEUE_ADRESSE = "https://ochsenglitter.github.io/dossier-paris/";
+
+function bytesZuText(bytes) {
+  let s = "";
+  const block = 8192;
+  for (let i = 0; i < bytes.length; i += block) {
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + block));
+  }
+  return s;
+}
+
+function urlSicher(b64) {
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function ausUrlSicher(t) {
+  let s = t.replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  return s;
+}
+
+DP.standPacken = async function () {
+  const text = JSON.stringify(DP.stand);
+  let bytes = new TextEncoder().encode(text);
+  let art = "r";
+  if (typeof CompressionStream === "function") {
+    try {
+      const strom = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+      bytes = new Uint8Array(await new Response(strom).arrayBuffer());
+      art = "g";
+    } catch (e) { /* ungepackt weiter */ }
+  }
+  return art + urlSicher(btoa(bytesZuText(bytes)));
+};
+
+DP.standEntpacken = async function (code) {
+  const art = code.charAt(0);
+  const roh = atob(ausUrlSicher(code.slice(1)));
+  let bytes = new Uint8Array(roh.length);
+  for (let i = 0; i < roh.length; i++) bytes[i] = roh.charCodeAt(i);
+  if (art === "g") {
+    const strom = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    bytes = new Uint8Array(await new Response(strom).arrayBuffer());
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
+};
+
+DP.umzugsLink = async function (ziel) {
+  const code = await DP.standPacken();
+  return (ziel || DP.NEUE_ADRESSE) + "#stand=" + code;
+};
+
+/* Hat uns jemand einen Stand mitgebracht? Wird beim Start geprueft. */
+DP.mitgebrachterStand = function () {
+  const h = String(location.hash || "");
+  const t = h.indexOf("#stand=");
+  return t === 0 ? h.slice(7) : null;
+};
+
+DP.hashLeeren = function () {
+  try {
+    history.replaceState(null, "", location.pathname + location.search);
+  } catch (e) { location.hash = ""; }
+};
+
+/* Uebernimmt einen mitgebrachten Stand, ohne Vorhandenes zu verlieren. */
+DP.standUebernehmen = async function (code) {
+  let daten;
+  try {
+    daten = await DP.standEntpacken(code);
+  } catch (e) {
+    return { ok: false, grund: "Der Link ist unvollständig oder beschädigt." };
+  }
+  if (!daten || typeof daten !== "object" || !daten.srs) {
+    return { ok: false, grund: "In dem Link steckt kein Spielstand." };
+  }
+  const vorher = Object.keys(DP.stand.srs || {}).length;
+  const bisher = Number(DP.stand.revision) || 0;
+  DP.stand = DP.verschmelzen(DP.stand, DP.standAufbauen(daten));
+  DP.stand.revision = Math.max(bisher, Number(daten.revision) || 0) + 1;
+  DP.speichern();
+  return {
+    ok: true,
+    codename: DP.stand.codename,
+    karten: Object.keys(DP.stand.srs).length,
+    dazu: Object.keys(DP.stand.srs).length - vorher,
+    xp: DP.stand.xp,
+    module: (DP.stand.fortschritt.fertig || []).length
+  };
+};
+
+/* Laeuft die App schon auf der Zieladresse? */
+DP.aufZieladresse = function () {
+  try {
+    return location.href.indexOf(DP.NEUE_ADRESSE) === 0 ||
+           location.hostname === new URL(DP.NEUE_ADRESSE).hostname;
+  } catch (e) { return false; }
+};
+
 /* ---------- Sicherung ----------
    Der Fortschritt liegt im localStorage dieses einen Browsers. Das ist schnell
    und braucht keinen Account – aber es bedeutet auch: neues Handy, geloeschte

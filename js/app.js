@@ -44,6 +44,25 @@
     const l = DP.speicherLaeuft;
     if (!l || l.lage === "ok") return "";
 
+    /* Hier laeuft die App an einem Ort, an dem der Fortschritt nicht sicher
+       ist – und es gibt einen Ort, an dem er sicher waere. Dann ist die
+       richtige Antwort nicht "Achtung", sondern "komm mit". */
+    if (!DP.aufZieladresse()) {
+      const hatStand = DP.stand.xp > 0 || Object.keys(DP.stand.srs || {}).length > 0;
+      return `<div class="karte warn" id="speicherkarte">
+        <div class="label rot">// UMZUG</div>
+        <h3 style="font-size:19px">Diese Adresse kann deinen Fortschritt nicht behalten.</h3>
+        <p class="klein" style="margin-top:8px">${l.app
+          ? "Du hast die Seite aus " + esc(l.app) + " heraus geöffnet."
+          : "Die Seite läuft eingebettet in einer anderen Seite."}
+          Der Browser räumt den Speicher hier weg, sobald du das Fenster schließt.</p>
+        <p class="klein" style="margin:0">Es gibt eine feste Adresse, an der alles bleibt.
+        ${hatStand ? "<b>Dein bisheriger Fortschritt kommt mit.</b>" : ""}</p>
+        <button class="btn btn-haupt mt" id="umziehen">Umziehen${hatStand ? " – mit Fortschritt" : ""}</button>
+        <div id="umzugsfeld"></div>
+      </div>`;
+    }
+
     const blockiert = l.lage === "blockiert";
     let was, tun;
 
@@ -69,6 +88,44 @@
   }
 
   function speicherKarteVerdrahten() {
+    auf("#umziehen", "click", async () => {
+      const knopf = q("#umziehen");
+      const feld = q("#umzugsfeld");
+      knopf.textContent = "Packe deinen Fortschritt ein …";
+      knopf.setAttribute("disabled", "disabled");
+      let link;
+      try {
+        link = await DP.umzugsLink();
+      } catch (e) {
+        feld.innerHTML = `<div class="klein" style="margin-top:10px">Das Einpacken hat nicht
+          geklappt. Geh in die Einstellungen, mach dort eine Sicherung und spiel sie
+          auf der neuen Seite wieder ein.</div>`;
+        knopf.remove();
+        return;
+      }
+
+      const zuLang = link.length > 60000;
+      const ziel = zuLang ? DP.NEUE_ADRESSE : link;
+      knopf.remove();
+      feld.innerHTML = `
+        <a class="btn btn-haupt" href="${esc(ziel)}" target="_blank" rel="noopener"
+           style="display:block;text-align:center;text-decoration:none">Neue Seite öffnen
+           <span class="unter">${zuLang ? "Fortschritt danach von Hand einspielen" : "Dein Fortschritt ist im Link eingepackt"}</span></a>
+        <div class="klein grau" style="margin-top:10px">Öffnet sich nichts? Dann kopier den Link
+        und füg ihn in Safari oder Chrome ein.</div>
+        <button class="btn btn-geist mt" id="linkKopieren">Link kopieren</button>
+        ${zuLang ? `<div class="klein" style="margin-top:10px">Dein Stand ist zu groß für einen Link.
+          Mach vorher in den <b>Einstellungen → Sicherung</b> eine Sicherung und spiel sie drüben ein.</div>` : ""}`;
+      auf("#linkKopieren", "click", () => {
+        try {
+          navigator.clipboard.writeText(ziel);
+          q("#linkKopieren").textContent = "Kopiert.";
+        } catch (e) {
+          q("#linkKopieren").textContent = "Ging nicht – Link lange antippen und kopieren.";
+        }
+      });
+    });
+
     auf("#eigenesFenster", "click", () => {
       try { window.open(location.href, "_blank", "noopener"); }
       catch (e) { alert("Kopier die Adresse aus der Adresszeile und öffne sie in Safari oder Chrome."); }
@@ -1332,7 +1389,60 @@
     if (ansicht === "basis") zeigeBasis();
   });
 
-  if (!DP.stand.prolog) zeigeProlog();
+  function zeigeUmzugEmpfang(code) {
+    ansicht = "umzug";
+    zeichnen(`${kopf()}
+      <div class="karte akzent">
+        <div class="label">// ÜBERNAHME LÄUFT</div>
+        <h3>Dein Fortschritt kommt an</h3>
+        <p class="klein grau" style="margin-top:8px">Einen Moment.</p>
+      </div>`);
+
+    DP.standUebernehmen(code).then(e => {
+      DP.hashLeeren();
+      if (!e.ok) {
+        zeichnen(`${kopf()}
+          <div class="karte warn">
+            <div class="label rot">// ÜBERNAHME FEHLGESCHLAGEN</div>
+            <h3 style="font-size:19px">${esc(e.grund)}</h3>
+            <p class="klein grau" style="margin-top:8px">Nichts ist verloren: Auf der alten Seite
+            liegt dein Stand noch. Geh dort in die Einstellungen, erstell eine Sicherung und
+            spiel sie hier unter Einstellungen → Sicherung → Einspielen wieder ein.</p>
+          </div>
+          <button class="btn btn-haupt" id="w">Trotzdem weiter</button>`);
+        auf("#w", "click", () => { if (!DP.stand.prolog) zeigeProlog(); else zeigeBasis(); });
+        return;
+      }
+      DP.audio.aufstieg();
+      zeichnen(`${kopf()}
+        <div class="karte akzent zentriert">
+          <div class="label">// ÜBERNAHME ABGESCHLOSSEN</div>
+          <div class="abschluss-zahl">${e.karten}</div>
+          <div class="klein grau">Karten übernommen</div>
+          <div class="statreihe">
+            <div class="stat"><div class="wert">${esc(e.codename || "–")}</div><div class="titel">Agent</div></div>
+            <div class="stat"><div class="wert">${e.xp}</div><div class="titel">XP</div></div>
+            <div class="stat"><div class="wert">${e.module}</div><div class="titel">Akten</div></div>
+          </div>
+        </div>
+        <div class="karte">
+          <div class="label gold">// AB JETZT BLEIBT ES</div>
+          <p class="klein grau" style="margin:0">Das hier ist die feste Adresse. Leg sie einmal
+          auf den Startbildschirm, dann geht nie wieder etwas verloren – und die App
+          funktioniert auch ohne Netz. Wie das geht, steht in den Einstellungen.</p>
+        </div>
+        <button class="btn btn-haupt" id="w">Weiter</button>`);
+      auf("#w", "click", () => {
+        if (!DP.stand.prolog) zeigeProlog();
+        else if (!DP.stand.einstufungGemacht) zeigeEinstufungStart();
+        else zeigeBasis();
+      });
+    });
+  }
+
+  const mitgebracht = DP.mitgebrachterStand();
+  if (mitgebracht) zeigeUmzugEmpfang(mitgebracht);
+  else if (!DP.stand.prolog) zeigeProlog();
   else if (!DP.stand.einstufungGemacht) zeigeEinstufungStart();
   else zeigeBasis();
 })();

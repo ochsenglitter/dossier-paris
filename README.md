@@ -247,6 +247,22 @@ Was das alles trotzdem nicht auffängt:
   wurden. Auf dem Startbildschirm installiert (Einstellungen → Aufs Handy legen)
   gilt das nicht – deshalb der Hinweis dort.
 
+### Umzug auf eine andere Adresse
+
+Der Browserspeicher gehört zur Adresse: Was auf `claude.ai` liegt, sieht eine
+Seite auf `github.io` nicht. Läuft die App an einem Ort, an dem der Fortschritt
+nicht sicher ist, und gibt es eine feste Zieladresse (`DP.NEUE_ADRESSE` in
+`js/core.js`), zeigt sie deshalb keine bloße Warnung, sondern einen
+**Umzugsknopf**: Er packt den kompletten Stand mit gzip in den Link zur neuen
+Adresse, die neue Seite liest ihn beim Öffnen aus und führt ihn mit einem dort
+eventuell schon vorhandenen Stand zusammen — pro Karte gewinnt die weiter
+geübte, bei Punkten und Serie der höhere Wert. Danach wird der Link aus der
+Adresszeile entfernt.
+
+Ein Stand von rund 25.000 Zeichen wird dabei zu einem Link von rund 1.850
+Zeichen. Wird es doch zu groß für eine URL (über 60.000 Zeichen), führt der
+Knopf zur neuen Adresse und weist auf den Weg über die Sicherung hin.
+
 Für all das gibt es unter *Einstellungen → Sicherung* einen Knopf, der den
 kompletten Stand als Text ausgibt. Den kann man sich selbst per Mail schicken
 und auf einem anderen Gerät wieder einspielen; der eingespielte Stand gewinnt
