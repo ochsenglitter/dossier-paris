@@ -315,7 +315,7 @@
     const gesamt = Math.round(DP.gesamtFortschritt() * 100);
     const offen = DP.missionHolen();
     const eil = window.EILAUFTRAG ? DP.eilStand() : null;
-    const eilAktiv = !!(eil && eil.tage !== null && eil.tage >= -1);
+    const eilAktiv = !!(eil && eil.tage !== null && eil.tage >= -7);
     const sicherungAlter = DP.sicherungAlter();
     const genugFortschritt = s.verlauf.length + (s.tag.aufgaben > 0 ? 1 : 0) >= 3;
     const sicherungFaellig = genugFortschritt && (sicherungAlter === null || sicherungAlter >= 14);
@@ -370,7 +370,7 @@
 
       ${eilAktiv ? `<div class="karte warn" style="border-color:rgba(255,194,75,.55)">
         <div class="label gold">// EILAUFTRAG &middot; ${eil.tage > 1 ? "NOCH " + eil.tage + " TAGE"
-          : eil.tage === 1 ? "MORGEN" : eil.tage === 0 ? "HEUTE" : "ABGELAUFEN"}</div>
+          : eil.tage === 1 ? "MORGEN" : eil.tage === 0 ? "HEUTE" : "TEST VORBEI"}</div>
         <h3>${esc(window.EILAUFTRAG.unite)} &middot; ${esc(window.EILAUFTRAG.titel)}</h3>
         <div class="klein grau" style="margin-bottom:10px">${esc(window.EILAUFTRAG.anlass)} &middot;
           schriftlich und nach Gehör, mit strenger Rechtschreibung</div>
@@ -379,7 +379,10 @@
           <b>${eil.sitzt}</b> <span class="grau">von ${eil.gesamt} Wörtern sitzen sicher</span>
         </div>
         <button class="btn btn-haupt mt" id="eilstart">Eilauftrag öffnen
-          <span class="unter">${eil.sitzt === 0 ? "Erste Wörter aufnehmen" : eil.sitzt >= eil.gesamt ? "Alles sitzt – noch mal kontrollieren" : "Weiter, wo es noch wackelt"}</span></button>
+          <span class="unter">${eil.tage < 0 ? "Nachsitzen – die Wörter bleiben nützlich"
+            : eil.sitzt === 0 ? "Erste Wörter aufnehmen"
+            : eil.sitzt >= eil.gesamt ? "Alles sitzt – noch mal kontrollieren"
+            : "Weiter, wo es noch wackelt"}</span></button>
       </div>` : ""}
 
       ${offen ? `<button class="btn btn-haupt" id="fortsetzen">Mission fortsetzen
@@ -1265,7 +1268,9 @@
       <button class="btn btn-geist mt" id="reset" style="color:var(--rot);border-color:rgba(255,77,106,.4)">Alles zurücksetzen</button>
       <button class="btn btn-geist mt" id="heim">Zurück</button>
 
-      <div class="fuss">Alle Daten liegen nur in diesem Browser. Kein Server, kein Account, keine Werbung.</div>`);
+      <div class="fuss">Alle Daten liegen nur in diesem Browser. Kein Server, kein Account, keine Werbung.<br>
+        <span class="mono" style="font-size:11px">Fassung ${esc(DP.VERSION)}${
+          window.EILAUFTRAG ? " · Eilauftrag " + esc(window.EILAUFTRAG.unite) : " · ohne Eilauftrag"}</span></div>`);
 
     auf(".schieber", "click", ev => {
       const k = ev.currentTarget.dataset.k;
@@ -1398,7 +1403,9 @@
         <p class="klein grau" style="margin-top:8px">Einen Moment.</p>
       </div>`);
 
+    DP.umzugLaeuft = true;
     DP.standUebernehmen(code).then(e => {
+      DP.umzugLaeuft = false;
       DP.hashLeeren();
       if (!e.ok) {
         zeichnen(`${kopf()}
@@ -1441,7 +1448,7 @@
   }
 
   const mitgebracht = DP.mitgebrachterStand();
-  if (mitgebracht) zeigeUmzugEmpfang(mitgebracht);
+  if (mitgebracht) { DP.umzugLaeuft = true; zeigeUmzugEmpfang(mitgebracht); }
   else if (!DP.stand.prolog) zeigeProlog();
   else if (!DP.stand.einstufungGemacht) zeigeEinstufungStart();
   else zeigeBasis();

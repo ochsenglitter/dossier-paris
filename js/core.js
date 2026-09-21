@@ -3,6 +3,11 @@
 const DP = {};
 window.DP = DP;
 
+/* Sichtbar in den Einstellungen. Damit laesst sich in zwei Sekunden klaeren,
+   ob auf einem Geraet wirklich die aktuelle Fassung laeuft – genau diese Frage
+   hat einmal einen halben Tag gekostet. */
+DP.VERSION = "2026-09-21-b";
+
 /* ---------- Hilfsfunktionen ---------- */
 
 DP.heute = function () {

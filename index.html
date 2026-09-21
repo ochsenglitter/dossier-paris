@@ -33,9 +33,30 @@
 <script src="js/app.js"></script>
 <script>
 /* Offline-Betrieb, damit die App auch im Bus oder ohne Netz laeuft. */
-if ("serviceWorker" in navigator && location.protocol === "https:") {
+/* localhost gilt fuer Browser ebenfalls als sicherer Kontext – ohne diese
+   Ausnahme laesst sich der Offline-Betrieb lokal gar nicht testen. */
+var sichererOrt = location.protocol === "https:" ||
+  location.hostname === "localhost" || location.hostname === "127.0.0.1";
+if ("serviceWorker" in navigator && sichererOrt) {
+  /* Wenn eine neue Fassung uebernimmt, einmal neu laden – sonst zeigt die
+     bereits geoeffnete Seite weiter den alten Stand. */
+  var schonNeugeladen = false;
+  /* Nur bei einer ECHTEN Aktualisierung neu laden. Beim allerersten Besuch
+     uebernimmt der Offline-Speicher auch die Kontrolle – ein Neuladen wuerde
+     dort einen gerade laufenden Umzug mittendrin abbrechen und den
+     mitgebrachten Fortschritt verlieren. */
+  var hatteSchonEinen = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener("controllerchange", function () {
+    if (!hatteSchonEinen) return;
+    if (schonNeugeladen) return;
+    if (window.DP && window.DP.umzugLaeuft) return;   /* niemals mitten im Umzug */
+    schonNeugeladen = true;
+    location.reload();
+  });
   window.addEventListener("load", function () {
-    navigator.serviceWorker.register("sw.js").catch(function () { /* egal, App laeuft trotzdem */ });
+    navigator.serviceWorker.register("sw.js").then(function (reg) {
+      reg.update();                       /* bei jedem Start nach Neuem sehen */
+    }).catch(function () { /* egal, App laeuft trotzdem */ });
   });
 }
 </script>
