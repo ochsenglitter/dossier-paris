@@ -37,6 +37,44 @@
     window.scrollTo(0, 0);
   }
 
+  /* Die Karte, die verhindert, dass er zwei Wochen umsonst übt. Sie steht
+     ganz oben – vor dem Prolog, vor der Zentrale – und sagt nicht nur, dass
+     etwas nicht stimmt, sondern was er dagegen tun kann. */
+  function speicherKarte() {
+    const l = DP.speicherLaeuft;
+    if (!l || l.lage === "ok") return "";
+
+    const blockiert = l.lage === "blockiert";
+    let was, tun;
+
+    if (blockiert) {
+      was = "Dein Fortschritt kann hier nicht gespeichert werden.";
+      tun = "Wahrscheinlich läuft der Browser im privaten Modus. Schließ das private Fenster und öffne die Seite normal.";
+    } else if (l.app) {
+      was = "Achtung: Hier geht dein Fortschritt verloren.";
+      tun = "Du hast die Seite aus " + esc(l.app) + " heraus geöffnet. Tipp oben auf die drei Punkte und wähle „In Safari öffnen“ beziehungsweise „Im Browser öffnen“.";
+    } else {
+      was = "Achtung: Hier geht dein Fortschritt möglicherweise verloren.";
+      tun = "Die Seite läuft eingebettet in einer anderen Seite. Öffne sie in einem eigenen Fenster.";
+    }
+
+    return `<div class="karte warn" id="speicherkarte">
+      <div class="label rot">// SPEICHERN</div>
+      <h3 style="font-size:19px">${esc(was)}</h3>
+      <p class="klein" style="margin-top:8px">${tun}</p>
+      <p class="klein grau" style="margin:0">Danach einmal auf den Startbildschirm legen – dann bleibt alles erhalten,
+      auch ohne Netz. Wie das geht, steht in den Einstellungen.</p>
+      ${!blockiert ? `<button class="btn btn-geist mt" id="eigenesFenster">In eigenem Fenster öffnen</button>` : ""}
+    </div>`;
+  }
+
+  function speicherKarteVerdrahten() {
+    auf("#eigenesFenster", "click", () => {
+      try { window.open(location.href, "_blank", "noopener"); }
+      catch (e) { alert("Kopier die Adresse aus der Adresszeile und öffne sie in Safari oder Chrome."); }
+    });
+  }
+
   function kopf(rechts) {
     return `<div class="kopf">
       <div class="marke">DOSSIER <span>PARIS</span></div>
@@ -55,6 +93,7 @@
 
     zeichnen(`
       ${kopf()}
+      ${speicherKarte()}
       <div class="label rot">// ${esc(p.titel)}</div>
       <div class="terminal">${zeilen}</div>
       <div id="frageblock" style="opacity:0;transition:opacity .6s">
@@ -66,6 +105,8 @@
         </div>
       </div>
     `);
+
+    speicherKarteVerdrahten();
 
     setTimeout(() => {
       const f = q("#frageblock");
@@ -229,6 +270,8 @@
       ${kopf(`<span class="chip ${s.serie.tage > 0 ? "aktiv" : ""}">&#9650; ${s.serie.tage} Tage</span>
               <span class="chip cyan">${s.xp} XP</span>`)}
 
+      ${speicherKarte()}
+
       <div class="karte akzent">
         <div class="ring-box">
           <div class="ring">
@@ -245,6 +288,10 @@
             <div class="balken mt"><i style="width:${Math.round(rangAnteil * 100)}%"></i></div>
             <div class="klein grau" style="margin-top:5px">
               ${naechst ? (naechst.xp - s.xp) + " XP bis " + esc(naechst.name) : "Höchster Rang erreicht."}
+            </div>
+            <div class="klein" style="margin-top:6px;color:${DP.speicherLaeuft.lage === "ok" ? "var(--gruen)" : "var(--gold)"}">
+              ${DP.speicherLaeuft.lage === "ok" ? "&#10003; Gespeichert" : "&#9888; Speichern unsicher"}${
+                DP.zuletztGespeichert() ? ' <span class="grau">&middot; ' + DP.zuletztGespeichert() + "</span>" : ""}
             </div>
           </div>
         </div>
@@ -296,6 +343,7 @@
       </div>
     `);
 
+    speicherKarteVerdrahten();
     auf("#fortsetzen", "click", () => {
       const g = DP.missionHolen();
       if (g) missionFortsetzen(g); else starteMission("mission");
@@ -1185,7 +1233,7 @@
      in der Konsole hilft einem Vierzehnjährigen nicht. */
   function speicherWarnung(zustand) {
     let el = document.getElementById("speicherwarnung");
-    if (zustand.ok) { if (el) el.remove(); return; }
+    if (zustand.ok !== false) { if (el) el.remove(); return; }
     if (!el) {
       el = document.createElement("div");
       el.id = "speicherwarnung";
@@ -1199,7 +1247,7 @@
   DP.aufSpeicherfehler = speicherWarnung;
 
   DP.laden();
-  if (!DP.speicherLaeuft.ok) speicherWarnung(DP.speicherLaeuft);
+  if (DP.speicherLaeuft.ok === false) speicherWarnung(DP.speicherLaeuft);
 
   document.addEventListener("click", () => DP.audio.freischalten(), { once: true });
 

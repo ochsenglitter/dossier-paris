@@ -130,19 +130,89 @@ DP.leererStand = function () {
 
 DP.stand = DP.leererStand();
 
-/* Kann dieser Browser ueberhaupt dauerhaft speichern? Im privaten Modus mancher
-   Browser schlaegt das fehl – dann muss der Hinweis kommen, bevor er loslegt. */
+/* Kann dieser Browser ueberhaupt dauerhaft speichern?
+
+   Das ist die wichtigste Frage der ganzen App, und sie hat mehr als eine
+   Antwort. Schreiben kann klappen und der Inhalt trotzdem weg sein, sobald
+   der Tab zugeht – naemlich dann, wenn die Seite
+
+   - in einem Rahmen innerhalb einer anderen Seite laeuft (dann greifen die
+     Regeln fuer Fremdspeicher, und Safari wie Chrome raeumen auf),
+   - im eingebauten Browser einer App geoeffnet wurde (WhatsApp, Instagram,
+     Facebook – die meisten davon leeren beim Schliessen alles),
+   - oder im privaten Modus laeuft.
+
+   Ein stiller Fehlschlag ist hier das Schlimmste: Er uebt zwei Wochen und
+   faengt jedes Mal von vorn an. Deshalb wird das erkannt und benannt. */
+
+function imFremdenRahmen() {
+  try { return window.self !== window.top; } catch (e) { return true; }
+}
+
+function appBrowser() {
+  const ua = String((navigator && navigator.userAgent) || "");
+  const muster = [
+    [/FBAN|FBAV|FB_IAB/i, "Facebook"],
+    [/Instagram/i, "Instagram"],
+    [/MicroMessenger/i, "WeChat"],
+    [/Snapchat/i, "Snapchat"],
+    [/TikTok|musical_ly|BytedanceWebview/i, "TikTok"],
+    [/\bLine\//i, "LINE"],
+    [/LinkedInApp/i, "LinkedIn"],
+    [/Pinterest/i, "Pinterest"],
+    [/\bGSA\//i, "der Google-App"],
+    [/;\s?wv\)|\bWebView\b/i, "einer App"]
+  ];
+  for (let i = 0; i < muster.length; i++) {
+    if (muster[i][0].test(ua)) return muster[i][1];
+  }
+  return null;
+}
+
 DP.speicherPruefen = function () {
+  let schreibbar = false, grund = null;
   try {
     const probe = "dossier-paris-probe";
     localStorage.setItem(probe, "1");
-    const gelesen = localStorage.getItem(probe);
+    schreibbar = localStorage.getItem(probe) === "1";
     localStorage.removeItem(probe);
-    DP.speicherLaeuft = { ok: gelesen === "1", grund: gelesen === "1" ? null : "Speicher nicht lesbar", geprueft: true };
+    if (!schreibbar) grund = "Der Browser nimmt nichts an.";
   } catch (e) {
-    DP.speicherLaeuft = { ok: false, grund: "kein Zugriff auf den Speicher", geprueft: true };
+    grund = "Der Browser lässt keinen Speicher zu – vermutlich privater Modus.";
   }
-  return DP.speicherLaeuft.ok;
+
+  const rahmen = imFremdenRahmen();
+  const app = appBrowser();
+
+  /* "wackelig": Schreiben geht, aber es ueberlebt das Schliessen womoeglich nicht. */
+  let lage = "ok", hinweis = null;
+  if (!schreibbar) {
+    lage = "blockiert";
+    hinweis = grund;
+  } else if (app) {
+    lage = "wackelig";
+    hinweis = "Du hast die App aus " + app + " heraus geöffnet. Der eingebaute Browser dort löscht meistens alles, sobald du das Fenster schließt.";
+  } else if (rahmen) {
+    lage = "wackelig";
+    hinweis = "Die App läuft gerade eingebettet in einer anderen Seite. Browser behandeln den Speicher dann als fremd und räumen ihn oft auf.";
+  }
+
+  DP.speicherLaeuft = {
+    ok: schreibbar, lage: lage, grund: hinweis, geprueft: true,
+    rahmen: rahmen, app: app
+  };
+  return schreibbar;
+};
+
+/* Wie lange ist der letzte erfolgreiche Schreibvorgang her? */
+DP.zuletztGespeichert = function () {
+  if (!DP.stand.gespeichertAm) return null;
+  const sek = Math.floor((Date.now() - DP.stand.gespeichertAm) / 1000);
+  if (sek < 10) return "gerade eben";
+  if (sek < 90) return "vor " + sek + " Sekunden";
+  if (sek < 5400) return "vor " + Math.round(sek / 60) + " Minuten";
+  if (sek < 172800) return "vor " + Math.round(sek / 3600) + " Stunden";
+  return "vor " + Math.round(sek / 86400) + " Tagen";
 };
 
 function standAufbauen(roh) {
@@ -220,14 +290,19 @@ DP.speichern = function () {
       localStorage.setItem(SCHLUESSEL, text);
       localStorage.setItem(REVISION_SCHLUESSEL, String(DP.stand.revision));
     } catch (e2) {
-      DP.speicherLaeuft = { ok: false, grund: "Der Speicher ist voll oder gesperrt.", geprueft: true };
+      /* Die Umgebungsbefunde (Rahmen, App-Browser) bleiben erhalten – nur die
+         Einstufung kippt auf blockiert. */
+      DP.speicherLaeuft = Object.assign({}, DP.speicherLaeuft, {
+        ok: false, lage: "blockiert",
+        grund: "Der Speicher ist voll oder wird vom Browser gesperrt.", geprueft: true
+      });
       if (typeof DP.aufSpeicherfehler === "function") DP.aufSpeicherfehler(DP.speicherLaeuft);
       return false;
     }
   }
 
   if (!DP.speicherLaeuft.ok) {
-    DP.speicherLaeuft = { ok: true, grund: null, geprueft: true };
+    DP.speicherPruefen();                       /* Umgebung neu einschätzen */
     if (typeof DP.aufSpeicherfehler === "function") DP.aufSpeicherfehler(DP.speicherLaeuft);
   }
 
