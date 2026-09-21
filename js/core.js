@@ -6,7 +6,7 @@ window.DP = DP;
 /* Sichtbar in den Einstellungen. Damit laesst sich in zwei Sekunden klaeren,
    ob auf einem Geraet wirklich die aktuelle Fassung laeuft – genau diese Frage
    hat einmal einen halben Tag gekostet. */
-DP.VERSION = "2026-09-21-b";
+DP.VERSION = "2026-09-21-c";
 
 /* ---------- Hilfsfunktionen ---------- */
 
@@ -235,6 +235,25 @@ DP.speicherPruefen = function () {
     rahmen: rahmen, app: app
   };
   return schreibbar;
+};
+
+/* Laeuft die App vom Startbildschirm aus oder in einem Browser-Tab?
+   Das ist nicht kosmetisch: Safari loescht den Speicher von Seiten, die sieben
+   Tage nicht benutzt wurden – installierte Apps sind davon ausgenommen. Wer
+   seinen Fortschritt behalten will, muss die App einmal ablegen. */
+DP.istInstalliert = function () {
+  try {
+    if (navigator.standalone === true) return true;                 /* iOS */
+    return window.matchMedia("(display-mode: standalone)").matches ||
+           window.matchMedia("(display-mode: fullscreen)").matches;
+  } catch (e) { return false; }
+};
+
+/* Erkennt iPhone/iPad, weil dort der Weg ueber das Teilen-Symbol geht. */
+DP.istApple = function () {
+  const ua = String((navigator && navigator.userAgent) || "");
+  return /iPhone|iPad|iPod/.test(ua) ||
+         (/Macintosh/.test(ua) && typeof document !== "undefined" && "ontouchend" in document);
 };
 
 /* Wie lange ist der letzte erfolgreiche Schreibvorgang her? */

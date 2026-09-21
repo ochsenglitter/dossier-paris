@@ -315,6 +315,12 @@
     const gesamt = Math.round(DP.gesamtFortschritt() * 100);
     const offen = DP.missionHolen();
     const eil = window.EILAUFTRAG ? DP.eilStand() : null;
+    /* Nicht nerven: erst ab etwas Fortschritt, und nach einem "Später" ein paar
+       Tage Ruhe. */
+    const lohntSich = s.xp >= 100 || Object.keys(s.srs || {}).length >= 20;
+    const ruhigBis = s.ablegenSpaeter || null;
+    const ablegenZeigen = !DP.istInstalliert() && DP.speicherLaeuft.lage === "ok" &&
+      lohntSich && (!ruhigBis || ruhigBis <= DP.heute());
     const eilAktiv = !!(eil && eil.tage !== null && eil.tage >= -7);
     const sicherungAlter = DP.sicherungAlter();
     const genugFortschritt = s.verlauf.length + (s.tag.aufgaben > 0 ? 1 : 0) >= 3;
@@ -368,6 +374,18 @@
         <div class="balken"><i style="width:${Math.round(DP.modulStaerke(modul.id) * 100)}%"></i></div>
       </div>
 
+      ${ablegenZeigen ? `<div class="karte" style="border-color:rgba(46,230,214,.45)">
+        <div class="label">// EIN LETZTER HANDGRIFF</div>
+        <h3 style="font-size:18px">Leg mich auf deinen Startbildschirm.</h3>
+        <p class="klein grau" style="margin-top:8px">Im Browser-Tab räumt dein Handy irgendwann
+        auf, und dein Fortschritt wäre weg. Als App bleibt alles – und sie funktioniert
+        dann auch ohne Netz.</p>
+        <p class="klein" style="margin:0">${DP.istApple()
+          ? "Tipp unten in Safari auf das <b>Teilen-Symbol</b> (Quadrat mit Pfeil nach oben), dann auf <b>„Zum Home-Bildschirm“</b>."
+          : "Tipp oben rechts im Browser auf das <b>Menü</b> (drei Punkte), dann auf <b>„App installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b>."}</p>
+        <button class="btn btn-geist mt" id="ablegenSpaeter">Später erinnern</button>
+      </div>` : ""}
+
       ${eilAktiv ? `<div class="karte warn" style="border-color:rgba(255,194,75,.55)">
         <div class="label gold">// EILAUFTRAG &middot; ${eil.tage > 1 ? "NOCH " + eil.tage + " TAGE"
           : eil.tage === 1 ? "MORGEN" : eil.tage === 0 ? "HEUTE" : "TEST VORBEI"}</div>
@@ -420,6 +438,11 @@
     `);
 
     speicherKarteVerdrahten();
+    auf("#ablegenSpaeter", "click", () => {
+      DP.stand.ablegenSpaeter = DP.tagePlus(3);
+      DP.speichern();
+      zeigeBasis();
+    });
     auf("#eilstart", "click", () => starteMission("eilauftrag"));
     auf("#fortsetzen", "click", () => {
       const g = DP.missionHolen();
