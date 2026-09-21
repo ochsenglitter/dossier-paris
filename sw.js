@@ -1,10 +1,10 @@
 /* DOSSIER PARIS – Offline-Cache. Version bei jeder Aenderung hochzaehlen. */
-const CACHE = "dossier-paris-v3";
+const CACHE = "dossier-paris-v4";
 const DATEIEN = [
   "./", "./index.html", "./manifest.webmanifest", "./img/icon.svg",
   "./css/style.css",
   "./js/core.js", "./js/items.js", "./js/audio.js", "./js/session.js", "./js/app.js",
-  "./js/data/s1.js", "./js/data/s2.js", "./js/data/s3.js", "./js/data/s4.js", "./js/data/s5.js", "./js/data/story.js"
+  "./js/data/s1.js", "./js/data/s2.js", "./js/data/s3.js", "./js/data/s4.js", "./js/data/s5.js", "./js/data/story.js", "./js/data/eilauftrag.js"
 ];
 
 self.addEventListener("install", e => {

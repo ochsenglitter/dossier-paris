@@ -114,6 +114,107 @@
       return { modus: modus, modul: modul, schritte: schritte, titel: "WIEDERHOLUNG", dauer: 10 * 60 };
     }
 
+    /* ---------- EILAUFTRAG ----------
+       Der Stoff, der in der Schule als Naechstes geprueft wird. Andere
+       Dramaturgie als eine normale Mission: kein neuer Lernstoff nebenbei,
+       keine Story-Abschnitte zur Belohnung, dafuer eine Frist und eine klare
+       Ansage, wie viele Woerter schon sitzen. Aufgabenmischung bewusst
+       schreiblastig – Ankreuzen hilft in einem Vokabeltest niemandem. */
+    if (modus === "eilauftrag") {
+      const E = window.EILAUFTRAG;
+      if (!E) return { modus: modus, modul: modul, schritte: [], titel: "EILAUFTRAG", dauer: 15 * 60 };
+
+      const alleEil = DP.eilItems().filter(verfuegbar);
+      const heute = DP.heute();
+      const neuDran = [], faellig = [], rest = [];
+      alleEil.forEach(i => {
+        const k = DP.stand.srs[i.key];
+        if (!k) neuDran.push(i);
+        else if (k.faellig <= heute) faellig.push(i);
+        else rest.push(i);
+      });
+      /* Schwaechstes zuerst: was er schon mal falsch hatte, kommt wieder. */
+      faellig.sort((a, b) => DP.stand.srs[a.key].r - DP.stand.srs[b.key].r);
+      rest.sort((a, b) => DP.stand.srs[a.key].r - DP.stand.srs[b.key].r);
+
+      const stand = DP.eilStand();
+      schritte.push({
+        art: "karte", stil: "boss",
+        titel: "EILAUFTRAG – " + (stand.tage !== null && stand.tage >= 0
+          ? (stand.tage === 0 ? "HEUTE" : stand.tage === 1 ? "NOCH 1 TAG" : "NOCH " + stand.tage + " TAGE")
+          : "OHNE FRIST"),
+        text: [E.story.intro, DP.zufall(E.story.beats)],
+        thema: E.unite + " – " + E.titel
+      });
+
+      /* Neue Woerter zuerst einmal ansehen, sonst raet er nur. */
+      const nochNie = [];
+      E.gruppen.forEach(g => g.woerter.forEach((w, i) => {
+        if (nochNie.length >= 6) return;
+        if (DP.stand.srs["eil:" + g.id + i + ":tip"]) return;
+        if (DP.stand.srs["eil:" + g.id + i + ":sinn"]) return;
+        if (benutzt.has("lern:eil:" + g.id + i)) return;
+        benutzt.add("lern:eil:" + g.id + i);
+        nochNie.push({ fr: w[0], de: w[1], tipp: w[2] || null });
+      }));
+      if (nochNie.length) {
+        schritte.push({ art: "karte", stil: "phase", titel: "NEUE WÖRTER",
+          text: [nochNie.length + " Wörter, die du noch nie gesehen hast. Erst anschauen, gleich musst du sie schreiben."] });
+        nochNie.forEach(v => schritte.push({ art: "lernkarte", vokabel: v, modul: "eil1" }));
+      }
+
+      function nimm(liste, typ, anzahl) {
+        const out = [];
+        for (let i = 0; i < liste.length && out.length < anzahl; i++) {
+          const it = liste[i];
+          if (benutzt.has(it.key)) continue;
+          if (typ && it.typ !== typ) continue;
+          benutzt.add(it.key);
+          out.push(it);
+        }
+        return out;
+      }
+      const topf = faellig.concat(neuDran).concat(rest);
+
+      const diktat = nimm(topf, "diktat", 6);
+      if (diktat.length) {
+        schritte.push({ art: "karte", stil: "phase", titel: "DICTÉE",
+          text: ["Funkspruch. Du hörst es, du schreibst es. So oft anhören, wie du willst."] });
+        diktat.forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
+      }
+
+      const schreiben = nimm(topf, "tippen", 10);
+      if (schreiben.length) {
+        schritte.push({ art: "karte", stil: "phase", titel: "ÉCRITURE",
+          text: ["Aus dem Deutschen heraus. Jeder Accent zählt."] });
+        schreiben.forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
+      }
+
+      const sinn = nimm(topf, "mc", 6).concat(nimm(topf, "bauen", 2));
+      if (sinn.length) {
+        schritte.push({ art: "karte", stil: "phase", titel: "SENS",
+          text: ["Schneller Durchgang: Was heißt was?"] });
+        DP.mische(sinn).forEach(i => schritte.push({ art: "item", item: i, phase: "eil" }));
+      }
+
+      /* Prüfstelle: nur das, was er zuletzt falsch hatte. */
+      const wackelig = topf.filter(i => {
+        const k = DP.stand.srs[i.key];
+        return k && k.ko > 0 && k.r <= 1 && !benutzt.has(i.key);
+      }).slice(0, 5);
+      wackelig.forEach(i => benutzt.add(i.key));
+      if (wackelig.length) {
+        schritte.push({ art: "karte", stil: "boss", titel: "CONTRÔLE",
+          text: ["Die " + wackelig.length + ", die dich zuletzt erwischt haben. Jetzt nochmal."] });
+        wackelig.forEach(i => schritte.push({ art: "item", item: i, phase: "boss", eilBoss: true }));
+      }
+
+      return {
+        modus: modus, modul: modul, schritte: schritte,
+        titel: "EILAUFTRAG", dauer: (DP.stand.einstellungen.tagesziel || 15) * 60
+      };
+    }
+
     /* Gezieltes Training eines Themas – fuer die Woche vor der Klassenarbeit.
        Nur dieses Modul, keine Story, kein neuer Stoff. */
     if (modus === "thema") {

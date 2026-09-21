@@ -131,6 +131,9 @@ nächsten Tage auf und korrigiert sich selbst.
   neue Regel, Training, Entschlüsselung, Story.
 - **Kurzeinsatz (5 min)** – für schlechte Tage. Hält die Serie am Leben.
 - **Wiederholen** – nur das, was gerade fällig ist.
+- **Eilauftrag** – der Stoff, der als Nächstes in der Schule geprüft wird, mit
+  Frist und eigener Dramaturgie. Steht ganz oben auf dem Startbildschirm und
+  verdrängt die laufende Saison, bis der Termin vorbei ist.
 - **Thementraining** – über die Akte ein einzelnes Modul auswählen und zehn
   Minuten gezielt üben. Für die Woche vor der Klassenarbeit.
 - **Prüfungssimulation** – 20 gemischte Aufgaben aus allem bisher Gelernten,
@@ -138,6 +141,43 @@ nächsten Tage auf und korrigiert sich selbst.
 - **Spickzettel** – alle Regeln, Wörter und Sätze eines Moduls zum Nachschlagen,
   jedes französische Wort antippbar zum Anhören.
 - **Bericht** – Statistik zum Vorzeigen, als Text kopierbar.
+
+## Der Eilauftrag
+
+Für Vokabeltests. Ein Eilauftrag ist eine Wortliste mit einem Datum, und er
+wird anders trainiert als der Rest der App:
+
+- **Geschrieben statt angekreuzt.** Aus dem Deutschen heraus selbst tippen,
+  mit Akzenttastatur. Ankreuzen hilft in einem Vokabeltest niemandem.
+- **Diktat.** Das französische Wort wird vorgelesen, er schreibt es auf. So
+  oft anhören, wie er will. Das trainiert Hören und Schreibweise gleichzeitig.
+- **Strenge Rechtschreibung.** Ein fehlender Accent zählt hier *nicht* als
+  richtig – anders als im normalen Training. Die Rückmeldung zeigt die korrekte
+  Schreibweise, markiert den Buchstaben, an dem es auseinanderging, nennt die
+  Merkhilfe und sagt ausdrücklich: „Im Test wäre das ein Fehler."
+- **CONTRÔLE am Ende.** Die fünf Wörter, die ihn zuletzt erwischt haben.
+- **Sichtbarer Stand.** „34 von 85 Wörtern sitzen sicher" plus Countdown bis
+  zum Termin. Ein Wort gilt als sicher, wenn Schreiben *und* Diktat saßen.
+
+Der Aufbau einer Mission: Briefing mit Frist → neue Wörter zum Ansehen →
+*Dictée* → *Écriture* → *Sens* → *Contrôle*.
+
+### Einen neuen Eilauftrag anlegen
+
+Alles steht in `js/data/eilauftrag.js`. Datum ändern, Wörter austauschen,
+fertig – die Aufgaben werden daraus automatisch erzeugt:
+
+```js
+frist: "2026-09-23",
+gruppen: [{ id: "a", name: "Austausch", woerter: [
+  ["un échange", "ein Austausch", "é wie in école"],   // 3. Feld: Merkhilfe, optional
+]}],
+saetze: [["Vive le sport !", "Es lebe der Sport!"]],
+gesprochen: [["sympathique", "sympa"]]              // geschrieben → gesprochen
+```
+
+Einträge mit Platzhaltern (`Vive ...!`) oder Abkürzungen (`l'OFAJ`) werden
+automatisch nur als Bedeutungsfrage gestellt, nicht diktiert.
 
 ## Tempo
 

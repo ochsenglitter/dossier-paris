@@ -86,6 +86,34 @@ DP.pruefe = function (eingabe, loesung) {
   if (DP.abstand(DP.ohneAkzente(e), DP.ohneAkzente(l)) <= 1) return "fast";
   return "falsch";
 };
+/* Strenge Variante fuer den Eilauftrag: Im Vokabeltest ist ein fehlender
+   Accent ein Fehler. "fast" bleibt als Rueckmeldung erhalten – damit er sieht,
+   dass er nah dran war – zaehlt hier aber nicht als gekonnt. */
+DP.pruefeStreng = function (eingabe, loesung) {
+  const e = DP.norm(eingabe);
+  const l = DP.norm(loesung);
+  if (!e) return "falsch";
+  if (e === l) return "richtig";
+
+  const alternativen = l.split(" / ").map(x => x.trim());
+  if (alternativen.some(a => a === e)) return "richtig";
+
+  if (DP.ohneAkzente(e) === DP.ohneAkzente(l)) return "fast";
+  if (alternativen.some(a => DP.ohneAkzente(a) === DP.ohneAkzente(e))) return "fast";
+  if (DP.abstand(DP.ohneAkzente(e), DP.ohneAkzente(l)) <= 1) return "fast";
+  return "falsch";
+};
+
+/* Welcher Buchstabe war es genau? Fuer eine Rueckmeldung, die nicht nur sagt
+   "falsch", sondern zeigt, WO der Unterschied sitzt. */
+DP.abweichungZeigen = function (eingabe, loesung) {
+  const e = String(eingabe || ""), l = String(loesung || "");
+  let i = 0;
+  while (i < e.length && i < l.length && e[i].toLowerCase() === l[i].toLowerCase()) i++;
+  if (i >= l.length) return null;
+  return { stelle: i, zeichen: l[i] };
+};
+
 /* ---------- Speicherstand ----------
    Wichtigste Eigenschaft dieser App: Es darf niemals Fortschritt verloren gehen.
    Wer zwei Wochen lang jeden Tag fuenfzehn Minuten investiert und dann bei null

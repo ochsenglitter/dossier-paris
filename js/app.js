@@ -257,6 +257,8 @@
     const sitzt = Object.values(s.srs).filter(k => k.r >= 3).length;
     const gesamt = Math.round(DP.gesamtFortschritt() * 100);
     const offen = DP.missionHolen();
+    const eil = window.EILAUFTRAG ? DP.eilStand() : null;
+    const eilAktiv = !!(eil && eil.tage !== null && eil.tage >= -1);
     const sicherungAlter = DP.sicherungAlter();
     const genugFortschritt = s.verlauf.length + (s.tag.aufgaben > 0 ? 1 : 0) >= 3;
     const sicherungFaellig = genugFortschritt && (sicherungAlter === null || sicherungAlter >= 14);
@@ -309,10 +311,24 @@
         <div class="balken"><i style="width:${Math.round(DP.modulStaerke(modul.id) * 100)}%"></i></div>
       </div>
 
+      ${eilAktiv ? `<div class="karte warn" style="border-color:rgba(255,194,75,.55)">
+        <div class="label gold">// EILAUFTRAG &middot; ${eil.tage > 1 ? "NOCH " + eil.tage + " TAGE"
+          : eil.tage === 1 ? "MORGEN" : eil.tage === 0 ? "HEUTE" : "ABGELAUFEN"}</div>
+        <h3>${esc(window.EILAUFTRAG.unite)} &middot; ${esc(window.EILAUFTRAG.titel)}</h3>
+        <div class="klein grau" style="margin-bottom:10px">${esc(window.EILAUFTRAG.anlass)} &middot;
+          schriftlich und nach Gehör, mit strenger Rechtschreibung</div>
+        <div class="balken"><i style="width:${Math.round((eil.sitzt / Math.max(1, eil.gesamt)) * 100)}%"></i></div>
+        <div class="klein" style="margin-top:6px">
+          <b>${eil.sitzt}</b> <span class="grau">von ${eil.gesamt} Wörtern sitzen sicher</span>
+        </div>
+        <button class="btn btn-haupt mt" id="eilstart">Eilauftrag öffnen
+          <span class="unter">${eil.sitzt === 0 ? "Erste Wörter aufnehmen" : eil.sitzt >= eil.gesamt ? "Alles sitzt – noch mal kontrollieren" : "Weiter, wo es noch wackelt"}</span></button>
+      </div>` : ""}
+
       ${offen ? `<button class="btn btn-haupt" id="fortsetzen">Mission fortsetzen
         <span class="unter">${esc(offen.titel)} &middot; noch ${offen.schritte.length - offen.index} Schritte, ${zeit(offen.restZeit)} übrig</span></button>` : ""}
 
-      <button class="btn ${offen ? "" : "btn-haupt"}" id="start">
+      <button class="btn ${(offen || eilAktiv) ? "" : "btn-haupt"}" id="start">
         ${offen ? "Neue Mission starten" : (fertigHeute ? "Noch eine Mission" : "Mission starten")}
         <span class="unter">${s.einstellungen.tagesziel || 15} Minuten &middot; ${esc(modul.titel)}</span>
       </button>
@@ -344,6 +360,7 @@
     `);
 
     speicherKarteVerdrahten();
+    auf("#eilstart", "click", () => starteMission("eilauftrag"));
     auf("#fortsetzen", "click", () => {
       const g = DP.missionHolen();
       if (g) missionFortsetzen(g); else starteMission("mission");
@@ -657,6 +674,20 @@
         <div class="bauflaeche" id="bau"></div>
         <div class="teile" id="teile">${it.teile.map((t, i) => `<button class="teil" data-i="${i}">${esc(t)}</button>`).join("")}</div>
         <button class="btn btn-haupt mt" id="pruef">Prüfen</button>`;
+    } else if (it.typ === "diktat") {
+      const stumm = !(DP.stand.einstellungen.stimme && DP.audio.kannSprechen());
+      koerper = `
+        <div class="frage" style="font-size:19px">${esc(it.frage)}</div>
+        ${stumm
+          ? `<div class="karte warn"><p class="klein" style="margin:0">Dieses Gerät kann nichts vorlesen.
+             Hier steht es deshalb: <b>${esc(it.sprechen)}</b> – schreib es ab.</p></div>`
+          : `<div class="zentriert" style="margin:18px 0">
+               <button class="lautsprecher" id="hoer" style="font-size:17px;padding:18px 32px">&#9654;&#65038; anhören</button>
+               <div class="klein grau" style="margin-top:8px">So oft, wie du willst.</div>
+             </div>`}
+        <input class="eingabe" id="ant" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Schreib es genau auf">
+        <div class="akzente">${AKZENTE.map(a => `<button class="akzenttaste" data-a="${a}">${a}</button>`).join("")}</div>
+        <button class="btn btn-haupt mt" id="pruef">Prüfen</button>`;
     } else {
       koerper = `
         <div class="frage">${it.frage}</div>
@@ -672,8 +703,8 @@
       <div id="rueck"></div>`);
     nachKopf();
 
-    if (it.typ === "hoeren") {
-      setTimeout(() => DP.audio.sprechen(it.sprechen), 220);
+    if (it.typ === "hoeren" || it.typ === "diktat") {
+      setTimeout(() => DP.audio.sprechen(it.sprechen), 260);
       auf("#hoer", "click", () => DP.audio.sprechen(it.sprechen));
     }
 
@@ -682,7 +713,7 @@
         if (beantwortet) return;
         antworten(s, e.currentTarget.dataset.w, e.currentTarget);
       });
-    } else if (it.typ === "bauen") {
+    } else if (it.typ === "bauen" && q("#teile")) {
       const gewaehlt = [];
       const bau = q("#bau");
       function neuZeichnen() {
@@ -730,9 +761,13 @@
     const it = s.item;
     const ergebnis = (it.typ === "mc" || it.typ === "hoeren")
       ? (DP.norm(eingabe) === DP.norm(it.loesung) ? "richtig" : "falsch")
-      : DP.pruefe(eingabe, it.loesung);
+      : (it.streng ? DP.pruefeStreng(eingabe, it.loesung) : DP.pruefe(eingabe, it.loesung));
 
-    DP.bewerten(it.key, ergebnis);
+    /* Beim Eilauftrag zählt "fast" nicht als gekonnt – im Test wäre es ein
+       Fehler. Es kommt deshalb bald wieder. */
+    const fuerSrs = (it.streng && ergebnis === "fast") ? "falsch" : ergebnis;
+
+    DP.bewerten(it.key, fuerSrs);
     statistik.gesamt++;
     statistik[ergebnis === "richtig" ? "richtig" : ergebnis === "fast" ? "fast" : "falsch"]++;
     if (s.phase === "boss") { statistik.bossGesamt++; if (ergebnis !== "falsch") statistik.boss++; }
@@ -801,15 +836,22 @@
       if (it.sprechen && it.typ !== "hoeren") DP.audio.sprechen(it.sprechen);
       setTimeout(() => { if (ansicht === "mission") weiter(); }, 850);
     } else if (ergebnis === "fast") {
+      const abw = it.streng ? DP.abweichungZeigen(eingabe, it.loesung) : null;
       r.innerHTML = `<div class="rueckmeldung fast"><div class="kopfzeile">Fast</div>
-        <div>Schreibweise: <span class="loesung">${esc(it.loesung)}</span></div>
-        <div class="klein grau">Zählt trotzdem. Kommt aber bald nochmal.</div>${codeblock}</div>
+        <div>Richtig geschrieben: <span class="loesung">${esc(it.loesung)}</span></div>
+        ${abw ? `<div class="klein" style="margin-top:4px">Der Unterschied sitzt beim
+          <b style="color:var(--gold)">${esc(abw.zeichen)}</b>.</div>` : ""}
+        ${it.tipp ? `<div class="klein" style="margin-top:4px">Merkhilfe: ${esc(it.tipp)}</div>` : ""}
+        <div class="klein grau" style="margin-top:4px">${it.streng
+          ? "Im Test wäre das ein Fehler. Kommt gleich nochmal."
+          : "Zählt trotzdem. Kommt aber bald nochmal."}</div>${codeblock}</div>
         <button class="btn btn-haupt mt" id="w">Weiter</button>`;
       if (it.sprechen) DP.audio.sprechen(it.sprechen);
       auf("#w", "click", weiter);
     } else {
       r.innerHTML = `<div class="rueckmeldung schlecht"><div class="kopfzeile">Noch nicht</div>
         <div>Richtig ist: <span class="loesung">${esc(it.loesung)}</span></div>
+        ${it.tipp ? `<div class="klein" style="margin-top:4px">Merkhilfe: ${esc(it.tipp)}</div>` : ""}
         ${it.sprechen && it.sprechen !== it.loesung ? `<div class="klein grau">${esc(it.sprechen)}</div>` : ""}${codeblock}</div>
         <button class="btn btn-haupt mt" id="w">Weiter</button>`;
       if (it.sprechen) DP.audio.sprechen(it.sprechen);
@@ -835,6 +877,23 @@
       .sort((a, b) => b.ko - a.ko).slice(0, 3);
 
     let extra = "";
+    if (mission.modus === "eilauftrag" && window.EILAUFTRAG) {
+      const st = DP.eilStand();
+      const anteil = Math.round((st.sitzt / Math.max(1, st.gesamt)) * 100);
+      extra = `<div class="karte" style="border-color:rgba(255,194,75,.45)">
+        <div class="label gold">// EILAUFTRAG</div>
+        <div class="abschluss-zahl" style="color:var(--gold)">${st.sitzt}<span style="font-size:24px;color:var(--grau)">/${st.gesamt}</span></div>
+        <div class="klein grau">Wörter sitzen sicher &middot; ${anteil}%</div>
+        <div class="balken mt"><i style="width:${anteil}%"></i></div>
+        <div class="klein" style="margin-top:10px">${
+          st.tage === null ? "" :
+          st.tage > 1 ? "Noch " + st.tage + " Tage bis zum Test." :
+          st.tage === 1 ? "Morgen ist der Test." :
+          st.tage === 0 ? "Heute ist der Test. Kurz vorher nochmal die CONTRÔLE machen." :
+          "Der Test war schon."
+        }</div>
+      </div>`;
+    }
     if (mission.modus === "pruefung") {
       const n = DP.noteSchaetzen(quote);
       extra = `<div class="karte warn">
